@@ -108,11 +108,18 @@ try
     var defaults = store.Load();
     Check(defaults.Language == "Română" && defaults.IssuerName == string.Empty,
         "First launch defaults to Romanian and an empty issuer");
+    Check(defaults.LogoPath is null && defaults.SaveDirectory == AppSettings.DefaultSaveDirectory
+        && Path.IsPathFullyQualified(defaults.SaveDirectory),
+        "First launch has no logo and a usable absolute PDF output directory");
     Check(File.Exists(store.FilePath), "First launch creates the config file");
 
+    var selectedLogoPath = Path.Combine(settingsDirectory, "Logo assets", " logo final.png ");
+    var selectedSaveDirectory = Path.Combine(settingsDirectory, "Oferte PDF ");
     store.Save(new AppSettings
     {
         IssuerName = "Ștefan & Asociații",
+        LogoPath = selectedLogoPath,
+        SaveDirectory = selectedSaveDirectory,
         Email = "  office+offers@example.ro  ",
         PhoneNumber = "00722123456",
         AddressLine1 = "Strada Ștefan cel Mare 12",
@@ -130,7 +137,10 @@ try
         && restored.AddressLine1 == "Strada Ștefan cel Mare 12" && restored.AddressLine2 == "Etaj 2, București, 010101"
         && restored.VatNumber == "00123456789012345678901234567890",
         "Contact data survives reload, trims e-mail whitespace, and preserves long identifiers and leading zeros");
+    Check(restored.LogoPath == selectedLogoPath && restored.SaveDirectory == selectedSaveDirectory,
+        "Selected logo and PDF directory paths survive reload without altering valid path whitespace");
     restored.Language = AppSettings.Romanian;
+    restored.LogoPath = null;
     restored.IssuerName = string.Empty;
     restored.DefaultMessage = string.Empty;
     restored.Email = string.Empty;
@@ -145,6 +155,8 @@ try
     Check(restored.Email == string.Empty && restored.PhoneNumber == string.Empty
         && restored.AddressLine1 == string.Empty && restored.AddressLine2 == string.Empty && restored.VatNumber == string.Empty,
         "Clearing contact data is persisted");
+    Check(restored.LogoPath is null && restored.SaveDirectory == selectedSaveDirectory,
+        "Clearing the optional logo is persisted without resetting the selected PDF directory");
 
     // A failed write must leave the previous config usable.
     Directory.CreateDirectory(store.FilePath + ".tmp");
@@ -162,6 +174,8 @@ try
     Check(restored.Email == string.Empty && restored.PhoneNumber == string.Empty
         && restored.AddressLine1 == string.Empty && restored.AddressLine2 == string.Empty && restored.VatNumber == string.Empty,
         "Existing settings files load with empty contact fields");
+    Check(restored.LogoPath is null && restored.SaveDirectory == AppSettings.DefaultSaveDirectory,
+        "Settings from older versions receive the optional logo and default PDF directory");
     File.WriteAllText(store.FilePath, "{\"IssuerName\":null,\"Email\":null,\"PhoneNumber\":null,\"AddressLine1\":null,\"AddressLine2\":null,\"VatNumber\":null,\"Language\":\"unsupported\",\"VatRate\":101,\"DefaultMessage\":null}");
     restored = store.Load();
     Check(restored.Language == AppSettings.Romanian && restored.VatRate == VatRateValue.Default
@@ -170,6 +184,15 @@ try
     Check(restored.Email == string.Empty && restored.PhoneNumber == string.Empty
         && restored.AddressLine1 == string.Empty && restored.AddressLine2 == string.Empty && restored.VatNumber == string.Empty,
         "Null contact fields normalize to empty values");
+
+    foreach (var config in new[]
+        { "{\"LogoPath\":null,\"SaveDirectory\":null}", "{\"LogoPath\":\"  \",\"SaveDirectory\":\"  \"}" })
+    {
+        File.WriteAllText(store.FilePath, config);
+        restored = store.Load();
+        Check(restored.LogoPath is null && restored.SaveDirectory == AppSettings.DefaultSaveDirectory,
+            "Missing or blank file settings restore an absent logo and the default PDF directory");
+    }
 
     File.WriteAllText(store.FilePath, "{broken");
     var readFailed = false;
@@ -266,6 +289,38 @@ var pdfText = Encoding.Latin1.GetString(pdfBytes);
 Check(pdfText.StartsWith("%PDF-", StringComparison.Ordinal) && pdfText.TrimEnd().EndsWith("%%EOF", StringComparison.Ordinal)
     && Regex.IsMatch(pdfText, @"/Type\s*/Page\b"), "Romanian text and rounded offer amounts produce a complete PDF");
 
+var logoDirectory = Path.Combine(Path.GetTempPath(), "EvoOffer-logo-tests-" + Guid.NewGuid());
+try
+{
+    Directory.CreateDirectory(logoDirectory);
+    var logoPath = Path.Combine(logoDirectory, "company logo.png");
+    // A solid 2 × 2 RGB PNG keeps this test independent of external artwork.
+    File.WriteAllBytes(logoPath, Convert.FromBase64String(
+        "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVR4nGPQ8LIAIgYIBQASZgKp0V582AAAAABJRU5ErkJggg=="));
+    var logoSettings = new AppSettings { IssuerName = "Logo issuer", LogoPath = logoPath };
+    var logoOffer = new OfferPdfData("Logo client", null, new[] { line }, logoSettings);
+    logoSettings.LogoPath = null;
+    Check(logoOffer.LogoPath == logoPath,
+        "An offer keeps its selected logo after subsequent settings changes");
+    var logoPdfText = Encoding.Latin1.GetString(pdfService.Generate(logoOffer));
+    Check(Regex.IsMatch(logoPdfText, @"/Subtype\s*/Image\b")
+        && logoPdfText.TrimEnd().EndsWith("%%EOF", StringComparison.Ordinal),
+        "A selected PNG logo is embedded in the completed offer PDF");
+
+    File.Delete(logoPath);
+    using var missingLogoOutput = new MemoryStream();
+    var missingLogoReported = false;
+    try { pdfService.Generate(logoOffer, missingLogoOutput); }
+    catch (FileNotFoundException) { missingLogoReported = true; }
+    Check(missingLogoReported && missingLogoOutput.Length == 0,
+        "A removed logo is reported before writing an incomplete PDF");
+}
+finally
+{
+    if (Directory.Exists(logoDirectory))
+        Directory.Delete(logoDirectory, recursive: true);
+}
+
 var landscapeOptions = pdfDefaults with
 {
     PageSize = PageSizes.A4.Landscape(),
@@ -307,4 +362,163 @@ Check(Regex.Matches(longPdfText, @"/Type\s*/Page\b").Count > 1
     && longPdfText.TrimEnd().EndsWith("%%EOF", StringComparison.Ordinal),
     "Long Romanian offers render across multiple pages with a footer and page numbering");
 
+var previewCacheDirectory = Path.Combine(Path.GetTempPath(), "EvoOffer-preview-tests-" + Guid.NewGuid());
+var savedPdfDirectory = Path.Combine(Path.GetTempPath(), "EvoOffer-saved-pdf-tests-" + Guid.NewGuid());
+try
+{
+    var unsupportedService = new PreviewPdfServiceStub { IsSupported = false };
+    var unsupportedRejected = false;
+    try { using var preview = await OfferPdfPreviewFile.CreateAsync(unsupportedService, pdfOffer, previewCacheDirectory); }
+    catch (PlatformNotSupportedException) { unsupportedRejected = true; }
+    Check(unsupportedRejected && unsupportedService.GenerateCalls == 0 && !Directory.Exists(previewCacheDirectory),
+        "Unsupported preview platforms are rejected before rendering or creating cache files");
+
+    using (var canceled = new CancellationTokenSource())
+    {
+        canceled.Cancel();
+        var unusedService = new PreviewPdfServiceStub();
+        var cancellationObserved = false;
+        try { using var preview = await OfferPdfPreviewFile.CreateAsync(unusedService, pdfOffer, previewCacheDirectory, canceled.Token); }
+        catch (OperationCanceledException) { cancellationObserved = true; }
+        Check(cancellationObserved && unusedService.GenerateCalls == 0 && !Directory.Exists(previewCacheDirectory),
+            "Canceled preview requests do not render or create cache files");
+    }
+
+    var failure = new InvalidOperationException("PDF rendering failed after writing a partial file.");
+    var failingService = new PreviewPdfServiceStub
+    {
+        WritePdf = output =>
+        {
+            output.Write(Encoding.ASCII.GetBytes("%PDF-partial"));
+            throw failure;
+        }
+    };
+    var renderingFailureObserved = false;
+    try { using var preview = await OfferPdfPreviewFile.CreateAsync(failingService, pdfOffer, previewCacheDirectory); }
+    catch (InvalidOperationException ex) when (ReferenceEquals(ex, failure)) { renderingFailureObserved = true; }
+    Check(renderingFailureObserved && !Directory.EnumerateFiles(previewCacheDirectory, "*", SearchOption.AllDirectories).Any(),
+        "Preview failures preserve the rendering error and remove partial PDF files");
+
+    using (var canceled = new CancellationTokenSource())
+    using (var finishRendering = new ManualResetEventSlim())
+    {
+        var renderingStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var renderingUsedWorker = false;
+        var pendingService = new PreviewPdfServiceStub
+        {
+            WritePdf = output =>
+            {
+                renderingUsedWorker = Thread.CurrentThread.IsThreadPoolThread;
+                output.Write(Encoding.ASCII.GetBytes("%PDF-partial"));
+                renderingStarted.SetResult();
+                if (!finishRendering.Wait(TimeSpan.FromSeconds(10)))
+                    throw new TimeoutException("The test did not release PDF rendering.");
+                output.Write(Encoding.ASCII.GetBytes("\n%%EOF"));
+            }
+        };
+        var pendingPreview = OfferPdfPreviewFile.CreateAsync(pendingService, pdfOffer, previewCacheDirectory, canceled.Token);
+        try
+        {
+            await renderingStarted.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            Check(renderingUsedWorker && !pendingPreview.IsCompleted,
+                "Preview rendering runs on a worker and does not expose the PDF before it is complete");
+            canceled.Cancel();
+        }
+        finally { finishRendering.Set(); }
+
+        var cancellationObserved = false;
+        try { using var preview = await pendingPreview; }
+        catch (OperationCanceledException) { cancellationObserved = true; }
+        Check(cancellationObserved && !Directory.EnumerateFiles(previewCacheDirectory, "*", SearchOption.AllDirectories).Any(),
+            "Canceling during synchronous PDF rendering waits for the writer and removes its file");
+    }
+
+    using var firstPreview = await OfferPdfPreviewFile.CreateAsync(pdfService, pdfOffer, previewCacheDirectory);
+    using var secondPreview = await OfferPdfPreviewFile.CreateAsync(pdfService, longOffer, previewCacheDirectory);
+    var firstPreviewText = Encoding.Latin1.GetString(await File.ReadAllBytesAsync(firstPreview.FilePath));
+    var secondPreviewText = Encoding.Latin1.GetString(await File.ReadAllBytesAsync(secondPreview.FilePath));
+    Check(firstPreview.FilePath != secondPreview.FilePath && Path.GetExtension(firstPreview.FilePath) == ".pdf"
+        && Path.GetDirectoryName(firstPreview.FilePath) != previewCacheDirectory,
+        "Each open preview owns a unique PDF in a dedicated cache subdirectory");
+    Check(firstPreviewText.StartsWith("%PDF-", StringComparison.Ordinal)
+        && firstPreviewText.TrimEnd().EndsWith("%%EOF", StringComparison.Ordinal)
+        && Regex.Matches(secondPreviewText, @"/Type\s*/Page\b").Count > 1
+        && secondPreviewText.TrimEnd().EndsWith("%%EOF", StringComparison.Ordinal),
+        "Preview files contain complete, readable QuestPDF documents, including multiple pages");
+
+    using (var canceled = new CancellationTokenSource())
+    {
+        canceled.Cancel();
+        var canceledDirectory = Path.Combine(savedPdfDirectory, "Canceled save");
+        var cancellationObserved = false;
+        try { await firstPreview.SaveCopyAsync(canceledDirectory, canceled.Token); }
+        catch (OperationCanceledException) { cancellationObserved = true; }
+        Check(cancellationObserved && !Directory.Exists(canceledDirectory),
+            "A canceled PDF save does not create a directory or partial document");
+    }
+
+    var savedPaths = await Task.WhenAll(firstPreview.SaveCopyAsync(savedPdfDirectory),
+        firstPreview.SaveCopyAsync(savedPdfDirectory));
+    Check(savedPaths.Distinct().Count() == 2 && savedPaths.All(path =>
+        Path.GetDirectoryName(path) == savedPdfDirectory && Path.GetExtension(path) == ".pdf")
+        && Directory.EnumerateFiles(savedPdfDirectory).Count() == 2,
+        "Simultaneous PDF saves create distinct completed files in the selected directory");
+    foreach (var savedPath in savedPaths)
+        Check(Encoding.Latin1.GetString(await File.ReadAllBytesAsync(savedPath)) == firstPreviewText,
+            "A saved PDF contains the complete preview without overwriting an earlier save");
+
+    var blockedDirectory = Path.Combine(savedPdfDirectory, "Existing document.txt");
+    await File.WriteAllTextAsync(blockedDirectory, "Keep this document");
+    var invalidDestinationReported = false;
+    try { await firstPreview.SaveCopyAsync(blockedDirectory); }
+    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { invalidDestinationReported = true; }
+    Check(invalidDestinationReported && await File.ReadAllTextAsync(blockedDirectory) == "Keep this document"
+        && Directory.EnumerateFiles(savedPdfDirectory).Count() == 3,
+        "A failed PDF save preserves an existing destination file and leaves no partial output");
+    File.Delete(blockedDirectory);
+
+    firstPreview.Dispose();
+    firstPreview.Dispose();
+    Check(!File.Exists(firstPreview.FilePath) && File.Exists(secondPreview.FilePath),
+        "Closing a preview removes only its own file and can be repeated safely");
+    var failedSaveDirectory = Path.Combine(savedPdfDirectory, "Unavailable preview");
+    var unavailablePreviewReported = false;
+    try { await firstPreview.SaveCopyAsync(failedSaveDirectory); }
+    catch (FileNotFoundException) { unavailablePreviewReported = true; }
+    Check(unavailablePreviewReported && (!Directory.Exists(failedSaveDirectory)
+        || !Directory.EnumerateFiles(failedSaveDirectory).Any()),
+        "Saving an unavailable preview reports the error and cleans up its partial output");
+    secondPreview.Dispose();
+    Check(!Directory.EnumerateFiles(previewCacheDirectory, "*", SearchOption.AllDirectories).Any(),
+        "Closing all previews removes all generated PDF files");
+    Check(savedPaths.All(File.Exists), "Saved PDFs remain available after all previews are closed");
+}
+finally
+{
+    if (Directory.Exists(previewCacheDirectory))
+        Directory.Delete(previewCacheDirectory, recursive: true);
+    if (Directory.Exists(savedPdfDirectory))
+        Directory.Delete(savedPdfDirectory, recursive: true);
+}
+
 Console.WriteLine($"Passed {checks} regression checks.");
+
+sealed class PreviewPdfServiceStub : IOfferPdfService
+{
+    public bool IsSupported { get; init; } = true;
+    public int GenerateCalls { get; private set; }
+    public Action<Stream> WritePdf { get; init; } = _ => { };
+
+    public byte[] Generate(OfferPdfData offer, OfferPdfOptions? options = null)
+    {
+        using var output = new MemoryStream();
+        Generate(offer, output, options);
+        return output.ToArray();
+    }
+
+    public void Generate(OfferPdfData offer, Stream output, OfferPdfOptions? options = null)
+    {
+        GenerateCalls++;
+        WritePdf(output);
+    }
+}

@@ -25,6 +25,7 @@ public sealed class OfferPdfData
         Message = message ?? string.Empty;
         Items = Array.AsReadOnly(lines);
         IssuerName = issuer.IssuerName;
+        LogoPath = string.IsNullOrWhiteSpace(issuer.LogoPath) ? null : issuer.LogoPath;
         IssuerContactLines = Array.AsReadOnly(new[]
         {
             issuer.AddressLine1, issuer.AddressLine2, issuer.Email, issuer.PhoneNumber,
@@ -35,6 +36,7 @@ public sealed class OfferPdfData
     public string ClientName { get; }
     public string Message { get; }
     public string IssuerName { get; }
+    public string? LogoPath { get; }
     public IReadOnlyList<string> IssuerContactLines { get; }
     public IReadOnlyList<OfferPdfLine> Items { get; }
     public decimal Subtotal => Items.Sum(item => item.NetTotal);

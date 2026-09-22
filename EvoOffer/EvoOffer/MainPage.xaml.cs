@@ -13,14 +13,17 @@ public partial class MainPage : ContentPage
     private const string VatRatePreference = "offer_vat_percentage";
     private const double MinimumTableWidth = 1160;
     private readonly MainViewModel _viewModel;
+    private readonly IOfferPdfService _pdfService;
     private readonly SettingsStore _settingsStore = new(FileSystem.Current.AppDataDirectory);
     private AppSettings _settings;
     private bool? _usingSidebar;
     private bool? _usingCompactComposer;
     private bool _openingDialog;
 
-    public MainPage()
+    public MainPage(IOfferPdfService pdfService)
     {
+        ArgumentNullException.ThrowIfNull(pdfService);
+        _pdfService = pdfService;
         InitializeComponent();
         var savedVatRate = Preferences.Default.Get(VatRatePreference, VatRateValue.Format(VatRateValue.Default));
         var initialSettings = new AppSettings
@@ -38,6 +41,7 @@ public partial class MainPage : ContentPage
             _settings = initialSettings;
             loadError = "Could not read or create settings.json. Using default settings; open Settings to save again.";
         }
+        SettingsPathPicker.RestoreSavedAccess();
         _viewModel = new MainViewModel(_settings.VatRate);
         _viewModel.DefaultMessage = _settings.DefaultMessage;
         _viewModel.CustomText = _viewModel.DefaultMessage;
@@ -215,6 +219,8 @@ public partial class MainPage : ContentPage
         if (_openingDialog)
             return;
         _openingDialog = true;
+        OfferPdfPreviewFile? previewFile = null;
+        string? savedPdfPath = null;
         try
         {
             if (!_viewModel.TryValidateOffer(out var message))
@@ -223,11 +229,54 @@ public partial class MainPage : ContentPage
                 return;
             }
 
-            await Navigation.PushModalAsync(new OfferPreviewPage(_viewModel));
-            _viewModel.Status = "Offer preview ready.";
+            if (!_pdfService.IsSupported)
+            {
+                await DisplayAlertAsync("PDF preview unavailable",
+                    "PDF preview is currently available in the Windows app. It is not yet available on this platform.", "OK");
+                return;
+            }
+
+#if WINDOWS
+            try
+            {
+                _ = Microsoft.Web.WebView2.Core.CoreWebView2Environment.GetAvailableBrowserVersionString();
+            }
+            // WinUI reports a missing runtime as HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND).
+            catch (Exception ex) when (ex.HResult == unchecked((int)0x80070002))
+            {
+                await DisplayAlertAsync("PDF viewer required",
+                    "Install the Microsoft Edge WebView2 Runtime, then generate your offer again to preview the PDF.", "OK");
+                return;
+            }
+#endif
+
+            // Snapshot on the UI thread so later edits cannot change the PDF being generated.
+            var offer = new OfferPdfData(_viewModel.ClientName, _viewModel.CustomText, _viewModel.Items, _settings);
+            GenerateButton.IsEnabled = false;
+            GenerateButton.Text = "Generating…";
+            _viewModel.Status = "Generating offer PDF…";
+            previewFile = await OfferPdfPreviewFile.CreateAsync(_pdfService, offer, FileSystem.Current.CacheDirectory);
+            savedPdfPath = await previewFile.SaveCopyAsync(_settings.SaveDirectory);
+            await Navigation.PushModalAsync(new OfferPreviewPage(previewFile));
+            previewFile = null; // The preview page now owns the temporary PDF.
+            _viewModel.Status = $"Offer PDF saved to {savedPdfPath}";
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Offer PDF preview failed: {ex}");
+            _viewModel.Status = savedPdfPath is null
+                ? "Could not generate or save the offer PDF. Check the logo and save directory in Settings."
+                : $"Offer PDF saved to {savedPdfPath}";
+            await DisplayAlertAsync(savedPdfPath is null ? "Could not save PDF" : "Could not open PDF preview",
+                savedPdfPath is null
+                    ? "The offer PDF could not be generated or saved. Check that the logo image is available and the save directory is writable. Your offer is still available to edit."
+                    : $"Your PDF was saved to {savedPdfPath}, but the preview could not be opened.", "OK");
         }
         finally
         {
+            previewFile?.Dispose();
+            GenerateButton.IsEnabled = true;
+            GenerateButton.Text = "Generate Offer";
             _openingDialog = false;
         }
     }
@@ -311,6 +360,56 @@ public partial class MainPage : ContentPage
             var save = new Button { Text = "Save settings", BackgroundColor = Color.FromArgb("147EF0"), TextColor = Colors.White };
             var cancel = new Button { Text = "Cancel" };
             var page = new ContentPage { Title = "Settings" };
+            var selectingPath = false;
+            page.Disappearing += (_, _) =>
+            {
+                if (!selectingPath)
+                    SettingsPathPicker.DiscardUnsavedAccess();
+            };
+            var logoPathEntry = CreateSettingsEntry(_settings.LogoPath ?? string.Empty, "No logo selected", "LogoPath");
+            logoPathEntry.IsReadOnly = true;
+            SemanticProperties.SetDescription(logoPathEntry, "Logo image path");
+            var saveDirectoryEntry = CreateSettingsEntry(_settings.SaveDirectory, "Save directory", "SaveDirectory");
+            saveDirectoryEntry.IsReadOnly = true;
+            var browseLogo = new Button { Text = "Browse…", ImageSource = "folder.png", AutomationId = "BrowseLogo", Padding = new Thickness(12, 8) };
+            var browseDirectory = new Button { Text = "Browse…", ImageSource = "folder.png", AutomationId = "BrowseSaveDirectory", Padding = new Thickness(12, 8) };
+            SemanticProperties.SetDescription(browseLogo, "Browse for a logo image");
+            SemanticProperties.SetDescription(browseDirectory, "Browse for a PDF save folder");
+            var removeLogo = new Button
+            {
+                Text = "Remove logo", AutomationId = "RemoveLogo", HorizontalOptions = LayoutOptions.Start,
+                IsEnabled = !string.IsNullOrWhiteSpace(logoPathEntry.Text)
+            };
+            removeLogo.Clicked += (_, _) =>
+            {
+                logoPathEntry.Text = string.Empty;
+                removeLogo.IsEnabled = false;
+            };
+            async Task BrowsePathAsync(Func<Task<string?>> pick, Entry entry)
+            {
+                selectingPath = true;
+                save.IsEnabled = cancel.IsEnabled = browseLogo.IsEnabled = browseDirectory.IsEnabled = removeLogo.IsEnabled = false;
+                try
+                {
+                    var path = await pick();
+                    if (path is not null)
+                        entry.Text = path;
+                }
+                catch (OperationCanceledException) { }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Settings path picker failed: {ex}");
+                    await page.DisplayAlertAsync("Could not select path", "The file browser could not complete your selection. Please try again.", "OK");
+                }
+                finally
+                {
+                    selectingPath = false;
+                    save.IsEnabled = cancel.IsEnabled = browseLogo.IsEnabled = browseDirectory.IsEnabled = true;
+                    removeLogo.IsEnabled = !string.IsNullOrWhiteSpace(logoPathEntry.Text);
+                }
+            }
+            browseLogo.Clicked += async (_, _) => await BrowsePathAsync(SettingsPathPicker.PickLogoAsync, logoPathEntry);
+            browseDirectory.Clicked += async (_, _) => await BrowsePathAsync(SettingsPathPicker.PickSaveDirectoryAsync, saveDirectoryEntry);
             var buttons = new HorizontalStackLayout { Spacing = 12, Children = { save, cancel } };
             page.Content = new ScrollView
             {
@@ -322,6 +421,15 @@ public partial class MainPage : ContentPage
                         new Label { Text = "Settings", FontSize = 28, FontAttributes = FontAttributes.Bold },
                         new Label { Text = "Issuer name", FontSize = 18, FontAttributes = FontAttributes.Bold },
                         CreateSettingsInputBorder(issuerEntry),
+                        new BoxView { HeightRequest = 1, Color = Color.FromArgb("D2DCE8"), HorizontalOptions = LayoutOptions.Fill },
+                        new Label { Text = "Logo", FontSize = 18, FontAttributes = FontAttributes.Bold },
+                        new Label { Text = "Optional image displayed on generated offers.", TextColor = Color.FromArgb("50627C") },
+                        CreateSettingsPathRow(logoPathEntry, browseLogo),
+                        removeLogo,
+                        new BoxView { HeightRequest = 1, Color = Color.FromArgb("D2DCE8"), HorizontalOptions = LayoutOptions.Fill },
+                        new Label { Text = "Save directory", FontSize = 18, FontAttributes = FontAttributes.Bold },
+                        new Label { Text = "Generated PDFs are saved in this folder. The folder is created when needed.", TextColor = Color.FromArgb("50627C") },
+                        CreateSettingsPathRow(saveDirectoryEntry, browseDirectory),
                         new BoxView { HeightRequest = 1, Color = Color.FromArgb("D2DCE8"), HorizontalOptions = LayoutOptions.Fill },
                         new Label { Text = "Contact data", FontSize = 18, FontAttributes = FontAttributes.Bold },
                         new Label { Text = "E-mail", FontAttributes = FontAttributes.Bold },
@@ -369,6 +477,8 @@ public partial class MainPage : ContentPage
                 var settings = new AppSettings
                 {
                     IssuerName = issuerEntry.Text ?? string.Empty,
+                    LogoPath = logoPathEntry.Text,
+                    SaveDirectory = saveDirectoryEntry.Text ?? AppSettings.DefaultSaveDirectory,
                     Email = emailEntry.Text?.Trim() ?? string.Empty,
                     PhoneNumber = ContactDataValue.DigitsOnly(phoneEntry.Text),
                     AddressLine1 = addressLine1Entry.Text ?? string.Empty,
@@ -392,6 +502,18 @@ public partial class MainPage : ContentPage
                 _viewModel.VatRate = vatRate;
                 _viewModel.DefaultMessage = settings.DefaultMessage;
                 _viewModel.CustomText = _viewModel.DefaultMessage;
+                try
+                {
+                    SettingsPathPicker.CommitSavedAccess(settings.LogoPath, settings.SaveDirectory);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Could not persist selected file access: {ex}");
+                    _viewModel.Status = "Settings saved, but access to the selected paths could not be remembered.";
+                    await page.DisplayAlertAsync("Could not remember file access",
+                        "Your settings were saved, but access to the selected image or folder could not be remembered. Try saving again, or reselect the paths with Browse.", "OK");
+                    return;
+                }
                 _viewModel.Status = "Settings saved.";
                 await Navigation.PopModalAsync();
             };
@@ -429,6 +551,22 @@ public partial class MainPage : ContentPage
         Padding = new Thickness(12, 6),
         Content = input
     };
+
+    private static Grid CreateSettingsPathRow(Entry path, Button browse)
+    {
+        var row = new Grid
+        {
+            ColumnDefinitions =
+            [
+                new ColumnDefinition { Width = GridLength.Star },
+                new ColumnDefinition { Width = GridLength.Auto }
+            ],
+            ColumnSpacing = 12
+        };
+        row.Add(CreateSettingsInputBorder(path));
+        row.Add(browse, 1);
+        return row;
+    }
 
     private static void OnDigitsOnlyTextChanged(object? sender, TextChangedEventArgs e)
     {

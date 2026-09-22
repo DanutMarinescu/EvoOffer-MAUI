@@ -55,6 +55,11 @@ The current .NET support for Xcode 27 is a preview; see the
 The minimum supported iOS version remains 15.0. The Xcode 27 Mac Catalyst SDK
 requires Catalyst 17.0, so the Mac app now requires macOS 14 or later.
 
+Both Apple targets register a MAUI scene delegate and scene manifest for the
+UIKit scene lifecycle required by the version 27 SDK. The app keeps a single
+window. The build also tracks changes to the source `Info.plist`, ensuring
+incremental builds include updated startup configuration.
+
 From this directory, run:
 
 ```sh
@@ -118,11 +123,20 @@ backgrounds. Contact details are optional; a supplied e-mail address is validate
 when leaving the field and before saving. Phone and VAT numbers accept digits
 only (including pasted text), and preserve leading zeros.
 
+The **Logo** section shows an optional image path. Its folder button opens an
+image-only browser (PNG, JPEG, or WebP); **Remove logo** clears the selection.
+The selected image appears in the generated PDF header. The **Save directory**
+section shows the PDF destination and opens a folder-only browser. It defaults
+to `Documents/EvoOffer` (or the app's local data folder if Documents is unavailable).
+The destination is created when needed. Both selections are applied with
+**Save settings**; canceling a browser or the settings screen preserves the
+previous settings.
+
 A language dropdown offers **Română** (the default) and **English**, alongside the
 default offer message and VAT percentage. Choose **Save settings** to persist all
 values. Cancel discards edits.
 
-The app stores these values in `settings.json` in MAUI's
+The app stores these values, including `LogoPath` (nullable) and `SaveDirectory`, in `settings.json` in MAUI's
 `FileSystem.Current.AppDataDirectory` and loads them on startup. On first launch,
 it creates the file and imports any message and VAT values previously stored in
 platform preferences. Subsequent launches use the config file. Failed saves keep
@@ -136,14 +150,34 @@ are not implemented by this setting.
 
 QuestPDF `2026.9.0` is isolated behind `IOfferPdfService` / `OfferPdfService` in
 `EvoOffer/Services`. The service is registered with dependency injection in
-`MauiProgram.cs`. It returns PDF bytes or writes to a caller-owned stream without
-closing it. The existing **Generate offer** action still opens the on-screen
-preview; PDF export has not been added to that screen.
+`MauiProgram.cs` and passed through the app to the main page. It returns PDF bytes
+or writes to a caller-owned stream without closing it.
+
+On Windows, **Generate Offer** validates the offer, snapshots its items and saved
+issuer/contact details and optional logo path, and generates the PDF in the background.
+It saves a uniquely named PDF in the configured save directory, then opens
+that actual document in an in-app PDF preview, replacing the former hand-built
+table preview. The viewer provides page navigation, zoom, save, and print controls.
+Generation errors keep the offer editable and display a message; viewer loading
+errors provide a retry action. **Close preview** returns to the editor.
+
+`OfferPdfPreviewFile` owns a uniquely named PDF in the app's cache directory under
+`offer-previews`. It removes partial output after generation errors or
+cancellation and attempts to delete the completed PDF when its viewer closes.
+The permanent copy in the save directory remains available after closing the
+preview or app. Saving uses a temporary file followed by a rename, so unfinished
+copies are cleaned up and existing offers are never overwritten. Missing logo
+images or inaccessible save folders are reported without losing the offer form.
+The preview uses Windows' WebView2 PDF support and requires the WebView2 Runtime.
+Its browser cache is configured in app data so installed copies also work from
+read-only locations such as Program Files. See
+[Microsoft's local PDF viewing documentation](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/working-with-local-content#loading-local-content-by-navigating-to-a-file-url).
 
 **Platform support:** QuestPDF supports Windows, Linux, and native macOS .NET
 hosts. It does **not** support iOS, Android, or Mac Catalyst (the app's macOS
-target). Check `IOfferPdfService.IsSupported` before offering PDF export. On
-unsupported platforms, generation throws a clear `PlatformNotSupportedException`
+target). The button checks `IOfferPdfService.IsSupported` and shows a PDF preview
+unavailable message on these platforms, without invoking the renderer. On
+unsupported platforms, direct service generation throws a clear `PlatformNotSupportedException`
 before loading the native renderer. Apple clients need a backend or a different
 renderer to export PDFs. See [QuestPDF's MAUI guidance](https://github.com/QuestPDF/QuestPDF/discussions/925).
 

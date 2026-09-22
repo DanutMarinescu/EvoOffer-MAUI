@@ -8,7 +8,11 @@ public sealed class AppSettings
     public const string Romanian = "Română";
     public const string English = "English";
 
+    public static string DefaultSaveDirectory { get; } = GetDefaultSaveDirectory();
+
     public string IssuerName { get; set; } = string.Empty;
+    public string? LogoPath { get; set; }
+    public string SaveDirectory { get; set; } = DefaultSaveDirectory;
     public string Email { get; set; } = string.Empty;
     public string PhoneNumber { get; set; } = string.Empty;
     public string AddressLine1 { get; set; } = string.Empty;
@@ -21,6 +25,10 @@ public sealed class AppSettings
     public void Normalize()
     {
         IssuerName ??= string.Empty;
+        if (string.IsNullOrWhiteSpace(LogoPath))
+            LogoPath = null;
+        if (string.IsNullOrWhiteSpace(SaveDirectory))
+            SaveDirectory = DefaultSaveDirectory;
         Email = Email?.Trim() ?? string.Empty;
         PhoneNumber = ContactDataValue.DigitsOnly(PhoneNumber);
         AddressLine1 ??= string.Empty;
@@ -31,6 +39,16 @@ public sealed class AppSettings
         if (!VatRateValue.IsValid(VatRate))
             VatRate = VatRateValue.Default;
         DefaultMessage ??= MainViewModel.DefaultCustomText;
+    }
+
+    private static string GetDefaultSaveDirectory()
+    {
+        var directory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        if (string.IsNullOrWhiteSpace(directory))
+            directory = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        if (string.IsNullOrWhiteSpace(directory))
+            directory = AppContext.BaseDirectory;
+        return Path.Combine(directory, "EvoOffer");
     }
 }
 

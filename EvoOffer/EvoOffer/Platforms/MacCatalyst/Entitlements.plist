@@ -9,6 +9,10 @@
         <!-- When App Sandbox is enabled, this value is required to open outgoing network connections. -->
         <key>com.apple.security.network.client</key>
         <true/>
+        <!-- Settings can select a logo and a destination folder outside the app sandbox. -->
+        <key>com.apple.security.files.user-selected.read-write</key>
+        <true/>
+        <key>com.apple.security.files.bookmarks.app-scope</key>
+        <true/>
     </dict>
 </plist>
-

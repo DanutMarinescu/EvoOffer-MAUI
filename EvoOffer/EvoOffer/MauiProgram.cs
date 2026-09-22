@@ -12,6 +12,9 @@ public static class MauiProgram
         builder.UseMauiApp<App>();
 
 #if WINDOWS
+        // WebView2 needs a writable cache even when the app is installed in Program Files.
+        Environment.SetEnvironmentVariable("WEBVIEW2_USER_DATA_FOLDER",
+            Path.Combine(FileSystem.Current.AppDataDirectory, "WebView2"));
         // Settings initializes native dependencies; only access it on supported MAUI targets.
         // Choose the appropriate QuestPDF license before production use:
         // https://www.questpdf.com/license/configuration.html

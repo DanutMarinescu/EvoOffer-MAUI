@@ -1,4 +1,15 @@
 <Project>
+    <!-- The Apple SDK tracks the manifest path in its generated inputs file but
+         does not track edits to the manifest itself. Include the source so an
+         incremental build cannot ship an outdated startup configuration. -->
+    <Target Name="TrackAppleAppManifest" BeforeTargets="_CompileAppManifest"
+            DependsOnTargets="_DetectAppManifest"
+            Condition="'$(TargetPlatformIdentifier)' == 'ios' Or '$(TargetPlatformIdentifier)' == 'maccatalyst'">
+        <ItemGroup>
+            <_CompileAppManifestInputFile Include="$(AppBundleManifest)" Condition="Exists('$(AppBundleManifest)')" />
+        </ItemGroup>
+    </Target>
+
     <!-- The Apple SDK normally relies on xcode-select, which may point to
          standalone Command Line Tools. Apply the fallback to IDE builds too.
          Explicit toolchain choices (including legacy preferences) take priority. -->

@@ -42,18 +42,24 @@ public sealed class OfferPdfService : IOfferPdfService
             throw new PlatformNotSupportedException(
                 "QuestPDF does not support iOS, Android or Mac Catalyst. Generate PDFs on Windows or in a desktop/server .NET host.");
 
-        CreateDocument(offer, configuration).GeneratePdf(output);
+        var logo = offer.LogoPath is null ? null : File.ReadAllBytes(offer.LogoPath);
+        CreateDocument(offer, configuration, logo).GeneratePdf(output);
     }
 
-    private static Document CreateDocument(OfferPdfData offer, OfferPdfOptions options) => Document.Create(document =>
+    private static Document CreateDocument(OfferPdfData offer, OfferPdfOptions options, byte[]? logo) => Document.Create(document =>
     {
         document.Page(page =>
         {
             page.Size(options.PageSize);
             page.Margin(options.Margin);
             page.DefaultTextStyle(style => style.FontFamily(options.FontFamily).FontSize(options.FontSize));
-            page.Header().PaddingBottom(16).Text(options.Title).FontSize(options.FontSize + 14)
-                .SemiBold().FontColor(options.AccentColor);
+            page.Header().PaddingBottom(16).Row(header =>
+            {
+                header.RelativeItem().AlignMiddle().Text(options.Title).FontSize(options.FontSize + 14)
+                    .SemiBold().FontColor(options.AccentColor);
+                if (logo is not null)
+                    header.ConstantItem(120).PaddingLeft(12).Height(60).AlignRight().Image(logo).FitArea();
+            });
 
             page.Content().Column(column =>
             {
