@@ -26,6 +26,12 @@ public sealed class OfferPdfData
         Items = Array.AsReadOnly(lines);
         IssuerName = issuer.IssuerName;
         LogoPath = string.IsNullOrWhiteSpace(issuer.LogoPath) ? null : issuer.LogoPath;
+        Language = issuer.Language == AppSettings.English ? AppSettings.English : AppSettings.Romanian;
+        AddressLine1 = issuer.AddressLine1;
+        AddressLine2 = issuer.AddressLine2;
+        Email = issuer.Email;
+        PhoneNumber = issuer.PhoneNumber;
+        VatNumber = issuer.VatNumber;
         IssuerContactLines = Array.AsReadOnly(new[]
         {
             issuer.AddressLine1, issuer.AddressLine2, issuer.Email, issuer.PhoneNumber,
@@ -37,6 +43,12 @@ public sealed class OfferPdfData
     public string Message { get; }
     public string IssuerName { get; }
     public string? LogoPath { get; }
+    public string Language { get; }
+    public string AddressLine1 { get; }
+    public string AddressLine2 { get; }
+    public string Email { get; }
+    public string PhoneNumber { get; }
+    public string VatNumber { get; }
     public IReadOnlyList<string> IssuerContactLines { get; }
     public IReadOnlyList<OfferPdfLine> Items { get; }
     public decimal Subtotal => Items.Sum(item => item.NetTotal);

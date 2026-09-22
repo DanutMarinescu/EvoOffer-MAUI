@@ -446,6 +446,7 @@ public partial class MainPage : ContentPage
                         new BoxView { HeightRequest = 1, Color = Color.FromArgb("D2DCE8"), HorizontalOptions = LayoutOptions.Fill },
                         new Label { Text = "Language", FontSize = 18, FontAttributes = FontAttributes.Bold },
                         CreateSettingsInputBorder(languagePicker),
+                        new Label { Text = "Used for PDF labels, dates and number formatting. Your offer message is kept as entered.", TextColor = Color.FromArgb("50627C") },
                         new BoxView { HeightRequest = 1, Color = Color.FromArgb("D2DCE8"), HorizontalOptions = LayoutOptions.Fill },
                         new Label { Text = "Default offer message", FontSize = 18, FontAttributes = FontAttributes.Bold },
                         new Label { Text = "Use this message for the current offer and whenever you reset the form.", TextColor = Color.FromArgb("50627C") },

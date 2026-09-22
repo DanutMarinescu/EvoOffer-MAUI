@@ -11,9 +11,14 @@ public sealed record OfferPdfOptions
     public float Margin { get; init; } = 30;
     public string FontFamily { get; init; } = "Lato";
     public float FontSize { get; init; } = 10;
-    public Color AccentColor { get; init; } = Color.FromHex("#147EF0");
-    public string Title { get; init; } = "Offer";
-    public string FooterText { get; init; } = string.Empty;
+    public Color AccentColor { get; init; } = Color.FromHex("#08254B");
+    /// <summary>Null uses the title in the offer's saved language.</summary>
+    public string? Title { get; init; }
+    public string Tagline { get; init; } = string.Empty;
+    /// <summary>Omitted unless the caller explicitly supplies an expiry date.</summary>
+    public DateOnly? ValidUntil { get; init; }
+    /// <summary>Null uses the localized closing note; empty hides it.</summary>
+    public string? FooterText { get; init; }
     public bool ShowPageNumbers { get; init; } = true;
 
     internal void Validate()
@@ -27,6 +32,7 @@ public sealed record OfferPdfOptions
         if (!float.IsFinite(FontSize) || FontSize <= 0)
             throw new ArgumentOutOfRangeException(nameof(FontSize), "Font size must be positive and finite.");
         ArgumentException.ThrowIfNullOrWhiteSpace(FontFamily);
-        ArgumentException.ThrowIfNullOrWhiteSpace(Title);
+        if (Title is not null)
+            ArgumentException.ThrowIfNullOrWhiteSpace(Title);
     }
 }

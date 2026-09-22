@@ -235,11 +235,20 @@ pdfItems[0].VatRate = 21m;
 pdfItems.Clear();
 pdfIssuer.IssuerName = "Changed issuer";
 pdfIssuer.Email = pdfIssuer.PhoneNumber = pdfIssuer.AddressLine1 = pdfIssuer.AddressLine2 = pdfIssuer.VatNumber = string.Empty;
+pdfIssuer.Language = AppSettings.English;
 Check(pdfOffer.ClientName == "Client român" && pdfOffer.Message.Contains("Vă mulțumim!")
     && pdfOffer.IssuerName == "Ștefan & Asociații"
     && pdfOffer.IssuerContactLines.SequenceEqual(new[]
         { "Strada Ștefan cel Mare 12", "București", "office@example.ro", "00722123456", "VAT number: 00123456" }),
     "PDF snapshot preserves issuer contact settings and Romanian client/message text after edits");
+Check(pdfOffer.Language == AppSettings.Romanian
+    && pdfOffer.AddressLine1 == "Strada Ștefan cel Mare 12" && pdfOffer.AddressLine2 == "București"
+    && pdfOffer.Email == "office@example.ro" && pdfOffer.PhoneNumber == "00722123456"
+    && pdfOffer.VatNumber == "00123456",
+    "PDF snapshot preserves structured letterhead contacts and language after settings edits");
+Check(new OfferPdfData("Client", null, new[] { line }, new AppSettings { Language = AppSettings.English }).Language == AppSettings.English
+    && new OfferPdfData("Client", null, new[] { line }, new AppSettings { Language = "unsupported" }).Language == AppSettings.Romanian,
+    "PDF language accepts English and normalizes unsupported preferences to Romanian");
 Check(pdfOffer.Items.Count == 2 && pdfOffer.Items[0].Number == 1 && pdfOffer.Items[0].Quantity == 2.5m
     && pdfOffer.Items[0].VatRate == 9.5m && pdfOffer.Items[0].Name == "Țeavă și îmbinări"
     && pdfOffer.Subtotal == 450.06m && pdfOffer.VatTotal == 42.76m && pdfOffer.GrandTotal == 492.82m,
@@ -361,6 +370,34 @@ var longPdfText = Encoding.Latin1.GetString(pdfService.Generate(longOffer,
 Check(Regex.Matches(longPdfText, @"/Type\s*/Page\b").Count > 1
     && longPdfText.TrimEnd().EndsWith("%%EOF", StringComparison.Ordinal),
     "Long Romanian offers render across multiple pages with a footer and page numbering");
+
+var templateSamples = OfferPdfSamples.Create(pdfDefaults);
+var renderedSamples = new Dictionary<string, byte[]>();
+foreach (var sample in templateSamples)
+{
+    var bytes = pdfService.Generate(sample.Offer, sample.Options);
+    var text = Encoding.Latin1.GetString(bytes);
+    var pageCount = Regex.Matches(text, @"/Type\s*/Page\b").Count;
+    Check(text.StartsWith("%PDF-", StringComparison.Ordinal) && text.TrimEnd().EndsWith("%%EOF", StringComparison.Ordinal)
+        && pageCount > 0, $"The {sample.Name} template fixture produces a complete PDF");
+    if (sample.Name == "sample-reference")
+    {
+        Check(pageCount == 1, "The five-line reference letterhead, message and totals fit on one A4 page");
+        Check(sample.Offer.Subtotal == 16910m && sample.Offer.VatTotal == 3212.90m && sample.Offer.GrandTotal == 20122.90m,
+            "Reference template uses calculated line amounts rather than inconsistent artwork totals");
+    }
+    if (sample.Name is "sample-multipage" or "sample-stress")
+        Check(pageCount > 1, $"The {sample.Name} fixture safely paginates long content");
+    renderedSamples.Add(sample.Name, bytes);
+}
+
+var unbrandedOffer = new OfferPdfData("Client fără antet", null,
+    new[] { new OfferLineItem(1, new CatalogItem(string.Empty, "Serviciu", 100m), 1m, 0m) }, new AppSettings());
+var unbrandedPdf = Encoding.Latin1.GetString(pdfService.Generate(unbrandedOffer,
+    pdfDefaults with { FooterText = string.Empty, ShowPageNumbers = false }));
+Check(Regex.Matches(unbrandedPdf, @"/Type\s*/Page\b").Count == 1
+    && unbrandedPdf.TrimEnd().EndsWith("%%EOF", StringComparison.Ordinal),
+    "An offer without company details, logo, message, category, footer or page numbers remains usable");
 
 var previewCacheDirectory = Path.Combine(Path.GetTempPath(), "EvoOffer-preview-tests-" + Guid.NewGuid());
 var savedPdfDirectory = Path.Combine(Path.GetTempPath(), "EvoOffer-saved-pdf-tests-" + Guid.NewGuid());
@@ -502,6 +539,17 @@ finally
 }
 
 Console.WriteLine($"Passed {checks} regression checks.");
+
+if (args.Length > 0)
+{
+    if (args.Length != 2 || args[0] != "--render-samples")
+        throw new ArgumentException("Usage: dotnet run --project EvoOffer.Tests -- [--render-samples <directory>]");
+    var sampleDirectory = Path.GetFullPath(args[1]);
+    Directory.CreateDirectory(sampleDirectory);
+    foreach (var (name, bytes) in renderedSamples)
+        await File.WriteAllBytesAsync(Path.Combine(sampleDirectory, name + ".pdf"), bytes);
+    Console.WriteLine($"Rendered {renderedSamples.Count} template samples to {sampleDirectory}");
+}
 
 sealed class PreviewPdfServiceStub : IOfferPdfService
 {

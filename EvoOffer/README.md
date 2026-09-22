@@ -143,8 +143,9 @@ platform preferences. Subsequent launches use the config file. Failed saves keep
 the settings page open and display an error; an unreadable config uses defaults
 and displays a status message without overwriting the file.
 
-The language selection is saved as a preference; interface and offer translation
-are not implemented by this setting.
+The language selection controls PDF labels, the greeting and closing note, dates,
+and number formatting. The interface and the issuer, product, and custom message
+text remain as entered; they are not automatically translated.
 
 ## PDF generation
 
@@ -196,18 +197,38 @@ builder.Services.AddSingleton(new OfferPdfOptions
     Margin = 30, // Points: 72 points = 1 inch.
     FontFamily = "Lato",
     FontSize = 10,
-    AccentColor = QuestPDF.Infrastructure.Color.FromHex("#147EF0"),
-    Title = "Offer",
-    FooterText = "Thank you for your business.",
+    AccentColor = QuestPDF.Infrastructure.Color.FromHex("#08254B"),
+    Title = null, // Localized commercial-offer title, or your own title.
+    Tagline = "", // Optional line beneath the company name.
+    ValidUntil = null, // Optional DateOnly, supplied per offer when needed.
+    FooterText = null, // Localized closing note; use "" to hide it.
     ShowPageNumbers = true
 });
 ```
 
 Lato is bundled with QuestPDF and includes Romanian characters. Register any
-other font with QuestPDF's `FontManager` before using it. The layout methods in
-`OfferPdfService.cs` own the issuer/contact block, client, message, repeating
-table headers, totals, and footer. Labels are English and amounts are RON,
-matching the current preview.
+other font with QuestPDF's `FontManager` before using it. `OfferPdfTemplate.cs`
+contains the reusable A4 letterhead design: an optional logo to the left of the
+issuer name, contact details with vector icons and vertical separators, an
+underlined recipient, a greeting and custom message, and a six-column product
+table. Product categories appear under their names. The navy table heading and
+grand-total bar follow the reference design, with thin rules between items and
+full-width subtotal and VAT rows.
+
+The snapshot captures the saved Romanian/English language and structured contact
+details. Amounts use that language's formatting and always remain in RON. Totals
+use the existing rounded model values, not amounts from the reference artwork.
+A uniform VAT rate appears in the summary; mixed rates appear next to each
+line's VAT amount. Long offers repeat the table heading and use a compact
+company/client header on subsequent pages. Normal rows and the summary stay
+together, while exceptionally long descriptions can continue onto another page.
+The closing note appears once after the totals, followed by optional page numbers
+at the bottom of each page.
+
+No sample company, logo, tagline, or expiry date is inserted into real offers.
+The `Tagline` and `ValidUntil` template options are optional configuration values,
+not new settings-screen fields. Callers can supply an expiry date with a
+per-document override such as `defaults with { ValidUntil = new DateOnly(2026, 10, 22) }`.
 
 Given an injected `IOfferPdfService pdfService`, create a snapshot on the UI
 thread, then generate from that snapshot (large offers can run on a worker):
@@ -236,3 +257,14 @@ are reported through QuestPDF's layout exceptions.
 ```sh
 dotnet run --project EvoOffer.Tests
 ```
+
+To also render Romanian, English, 150-item, and long-content template samples for
+visual inspection, choose an output directory:
+
+```sh
+dotnet run --project EvoOffer.Tests -- --render-samples /tmp/evooffer-pdf-samples
+```
+
+Sample contact details and dates are fixtures only. The reference sample uses
+consistent calculated VAT amounts rather than the inconsistent example totals
+in the supplied image.
