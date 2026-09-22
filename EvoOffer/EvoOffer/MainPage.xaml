@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:EvoOffer.Controls"
+             xmlns:models="clr-namespace:EvoOffer.Models"
+             xmlns:vm="clr-namespace:EvoOffer.ViewModels"
+             x:Class="EvoOffer.MainPage"
+             x:Name="MainScreen"
+             x:DataType="vm:MainViewModel"
+             Title="Offer Generator">
+    <Grid x:Name="PageLayout" Padding="24,20,24,16" RowDefinitions="Auto,*,Auto" RowSpacing="18">
+        <Grid x:Name="Header" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="24" MinimumHeightRequest="82">
+            <Image x:Name="BrandIcon" Source="document_outline.png" WidthRequest="60" HeightRequest="64"
+                   VerticalOptions="Center" SemanticProperties.Description="Offer Generator" />
+            <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                <Label x:Name="Heading" SemanticProperties.HeadingLevel="Level1" Text="Offer Generator" FontSize="34" FontAttributes="Bold" />
+                <Label x:Name="Subtitle" MaxLines="1" LineBreakMode="TailTruncation" Text="Create professional offers quickly and easily"
+                       FontSize="19" TextColor="{StaticResource MutedInk}" />
+            </VerticalStackLayout>
+            <Button x:Name="SettingsButton" Grid.Column="2" Text="Settings" ImageSource="settings.png"
+                    BackgroundColor="Transparent" BorderWidth="0" FontAttributes="None"
+                    VerticalOptions="Center" Padding="12,8" Clicked="OnSettingsClicked" />
+        </Grid>
+
+        <Grid x:Name="Workspace" Grid.Row="1" ColumnDefinitions="*,266" RowDefinitions="*"
+              ColumnSpacing="10" RowSpacing="10">
+            <Grid x:Name="FormArea" RowDefinitions="Auto,*" RowSpacing="10">
+                <Border x:Name="ClientCard" Style="{StaticResource CardStyle}">
+                    <Grid x:Name="ClientFields" RowDefinitions="Auto,48,Auto,104" RowSpacing="0">
+                        <Label Text="Client Name" Style="{StaticResource FieldLabelStyle}" />
+                        <Border Grid.Row="1" Style="{StaticResource InputBorderStyle}">
+                            <Entry Text="{Binding ClientName}" Placeholder="Enter client name" Margin="12,0"
+                                   ReturnType="Next" SemanticProperties.Description="Client name" />
+                        </Border>
+                        <Label x:Name="CustomTextLabel" Grid.Row="2" Margin="0,20,0,8" FontSize="17">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="Custom Text" FontAttributes="Bold" />
+                                    <Span Text=" (will appear in PDF)" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                        <Border Grid.Row="3" Style="{StaticResource InputBorderStyle}">
+                            <Editor Text="{Binding CustomText}" Margin="10,6" AutoSize="Disabled"
+                                    Placeholder="Add a personal message to your offer…"
+                                    SemanticProperties.Description="Custom offer text" />
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <Border x:Name="ItemsCard" Grid.Row="1" Style="{StaticResource CardStyle}">
+                    <Grid x:Name="ItemSection" RowDefinitions="Auto,*" RowSpacing="20">
+                        <Grid x:Name="ItemComposer" ColumnDefinitions="1.1*,1.15*,152,184" ColumnSpacing="16" RowSpacing="12">
+                            <VerticalStackLayout x:Name="CategoryField">
+                                <Label Text="Category" Style="{StaticResource FieldLabelStyle}" />
+                                <Border HeightRequest="48" Style="{StaticResource InputBorderStyle}">
+                                    <controls:DropdownPicker Title="Select category" ItemsSource="{Binding Categories}"
+                                            SelectedItem="{Binding SelectedCategory}"
+                                            SemanticProperties.Description="Product category" />
+                                </Border>
+                            </VerticalStackLayout>
+                            <VerticalStackLayout x:Name="ItemField" Grid.Column="1">
+                                <Label Text="Item" Style="{StaticResource FieldLabelStyle}" />
+                                <Border HeightRequest="48" Style="{StaticResource InputBorderStyle}">
+                                    <controls:DropdownPicker Title="Select item" ItemsSource="{Binding AvailableItems}"
+                                            ItemDisplayBinding="{Binding Name, x:DataType=models:CatalogItem}"
+                                            SelectedItem="{Binding SelectedItem}"
+                                            SemanticProperties.Description="Product or service" />
+                                </Border>
+                            </VerticalStackLayout>
+                            <VerticalStackLayout x:Name="QuantityField" Grid.Column="2">
+                                <Label Text="Quantity" Style="{StaticResource FieldLabelStyle}" />
+                                <controls:QuantityInput HeightRequest="48" Text="{Binding NewQuantityText}"
+                                                        HasError="{Binding NewQuantityHasError}" />
+                            </VerticalStackLayout>
+                            <Button x:Name="AddButton" Grid.Column="3" Text="Add" ImageSource="plus.png"
+                                    BackgroundColor="{StaticResource Accent}" BorderColor="#0873E5" TextColor="White"
+                                    VerticalOptions="End" HeightRequest="48" Command="{Binding AddCommand}" />
+                        </Grid>
+
+                        <Border x:Name="TableFrame" Grid.Row="1" Style="{StaticResource InputBorderStyle}" Stroke="#DEE6EF" SizeChanged="OnTableFrameSizeChanged">
+                            <!-- Only the rows scroll vertically. Explicit viewport sizing keeps the
+                                 CollectionView bounded even inside the horizontal overflow viewport. -->
+                            <AbsoluteLayout>
+                            <ScrollView x:Name="TableViewport" Orientation="Horizontal" AbsoluteLayout.LayoutBounds="0,0,1,1" AbsoluteLayout.LayoutFlags="All"
+                                        HorizontalScrollBarVisibility="Always" VerticalScrollBarVisibility="Never">
+                                <Grid x:Name="TableContent" RowDefinitions="64,*" WidthRequest="1160">
+                                    <Grid ColumnDefinitions="56,1.2*,1.45*,190,130,130,180,96" ColumnSpacing="1" BackgroundColor="#E0E7EF">
+                                        <BoxView Grid.ColumnSpan="8" Color="#EEF2F7" />
+                                        <Label Text="#" Style="{StaticResource TableHeaderStyle}" />
+                                        <Label Grid.Column="1" Text="Category" Style="{StaticResource TableHeaderStyle}" />
+                                        <Label Grid.Column="2" Text="Item" Style="{StaticResource TableHeaderStyle}" />
+                                        <Label Grid.Column="3" Text="Unit price (RON)&#10;VAT excluded" Style="{StaticResource TableHeaderStyle}" LineBreakMode="WordWrap" HorizontalTextAlignment="Center" />
+                                        <Label Grid.Column="4" Text="Quantity" Style="{StaticResource TableHeaderStyle}" HorizontalTextAlignment="Center" />
+                                        <Label Grid.Column="5" Text="{Binding VatHeaderText}" Style="{StaticResource TableHeaderStyle}" LineBreakMode="WordWrap" HorizontalTextAlignment="Center" />
+                                        <Label Grid.Column="6" Text="Total (RON)&#10;VAT included" Style="{StaticResource TableHeaderStyle}" LineBreakMode="WordWrap" HorizontalTextAlignment="Center" />
+                                        <Label Grid.Column="7" Text="Actions" Style="{StaticResource TableHeaderStyle}" HorizontalTextAlignment="Center" Padding="8,0" />
+                                        <BoxView Grid.ColumnSpan="8" Color="#DEE6EF" HeightRequest="1" VerticalOptions="End" />
+                                    </Grid>
+                                    <CollectionView x:Name="ItemsTable" Grid.Row="1" ItemsSource="{Binding Items}"
+                                                    SelectionMode="None" ItemSizingStrategy="MeasureFirstItem"
+                                                    VerticalScrollBarVisibility="Always" HorizontalScrollBarVisibility="Never"
+                                                    BackgroundColor="White">
+                                        <CollectionView.ItemsLayout>
+                                            <LinearItemsLayout Orientation="Vertical" ItemSpacing="0" />
+                                        </CollectionView.ItemsLayout>
+                                        <CollectionView.EmptyView>
+                                            <VerticalStackLayout Padding="24,32" Spacing="8" HorizontalOptions="Center" VerticalOptions="Center">
+                                                <Label Text="Your offer starts here" FontSize="19" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                                                <Label Text="Choose an item above and select Add." TextColor="{StaticResource MutedInk}" HorizontalTextAlignment="Center" />
+                                            </VerticalStackLayout>
+                                        </CollectionView.EmptyView>
+                                        <CollectionView.ItemTemplate>
+                                            <DataTemplate x:DataType="models:OfferLineItem">
+                                                <Grid ColumnDefinitions="56,1.2*,1.45*,190,130,130,180,96" HeightRequest="56" ColumnSpacing="1">
+                                                    <Label Text="{Binding Number}" Style="{StaticResource TableCellStyle}" Padding="8,0" />
+                                                    <Label Grid.Column="1" Text="{Binding Category}" Style="{StaticResource TableCellStyle}" />
+                                                    <Label Grid.Column="2" Text="{Binding Name}" Style="{StaticResource TableCellStyle}" />
+                                                    <Label Grid.Column="3" Text="{Binding UnitPriceText}" Style="{StaticResource TableCellStyle}" HorizontalTextAlignment="End" />
+                                                    <controls:QuantityInput Grid.Column="4" Text="{Binding QuantityText}" HasError="{Binding HasQuantityError}"
+                                                                            Margin="16,7" HeightRequest="40" />
+                                                    <Label Grid.Column="5" Text="{Binding VatAmountText}" Style="{StaticResource TableCellStyle}" HorizontalTextAlignment="End" />
+                                                    <Label Grid.Column="6" Text="{Binding TotalText}" Style="{StaticResource TableCellStyle}" HorizontalTextAlignment="End" />
+                                                    <ImageButton Grid.Column="7" Source="trash.png" BackgroundColor="Transparent" WidthRequest="44" HeightRequest="44"
+                                                                 HorizontalOptions="Center" VerticalOptions="Center" Padding="12" CornerRadius="5"
+                                                                 Clicked="OnDeleteItemClicked" ToolTipProperties.Text="Remove item"
+                                                                 SemanticProperties.Description="{Binding Name, StringFormat='Remove {0}'}" />
+                                                    <BoxView Grid.Column="1" Color="#E7ECF2" WidthRequest="1" HorizontalOptions="Start" />
+                                                    <BoxView Grid.Column="2" Color="#E7ECF2" WidthRequest="1" HorizontalOptions="Start" />
+                                                    <BoxView Grid.Column="3" Color="#E7ECF2" WidthRequest="1" HorizontalOptions="Start" />
+                                                    <BoxView Grid.Column="4" Color="#E7ECF2" WidthRequest="1" HorizontalOptions="Start" />
+                                                    <BoxView Grid.Column="5" Color="#E7ECF2" WidthRequest="1" HorizontalOptions="Start" />
+                                                    <BoxView Grid.Column="6" Color="#E7ECF2" WidthRequest="1" HorizontalOptions="Start" />
+                                                    <BoxView Grid.Column="7" Color="#E7ECF2" WidthRequest="1" HorizontalOptions="Start" />
+                                                    <BoxView Grid.ColumnSpan="8" Color="#E4EAF1" HeightRequest="1" VerticalOptions="End" />
+                                                </Grid>
+                                            </DataTemplate>
+                                        </CollectionView.ItemTemplate>
+                                    </CollectionView>
+                                </Grid>
+                            </ScrollView>
+                            </AbsoluteLayout>
+                        </Border>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <Border x:Name="ActionsCard" Grid.Column="1" Style="{StaticResource CardStyle}">
+                <Grid x:Name="ActionsLayout" RowDefinitions="76,56,56,*" RowSpacing="18" ColumnSpacing="12">
+                    <Button x:Name="GenerateButton" Text="Generate Offer" ImageSource="document_white.png"
+                            TextColor="White" BackgroundColor="#109D50" BorderColor="#0C9549"
+                            Clicked="OnGenerateClicked" Padding="16,12" />
+                    <Button x:Name="ResetButton" Grid.Row="1" Text="Reset" ImageSource="reset.png" Command="{Binding ResetCommand}" />
+                    <Button x:Name="ExitButton" Grid.Row="2" Text="Exit" ImageSource="close.png" Clicked="OnExitClicked" />
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="16" Padding="0,4,0,0">
+            <Label Text="{Binding Status}" TextColor="{StaticResource MutedInk}" FontSize="14" LineBreakMode="TailTruncation" MaxLines="1" />
+            <HorizontalStackLayout x:Name="ColumnNavigation" Grid.Column="1" IsVisible="False" Spacing="4" VerticalOptions="Center">
+                <Label Text="Columns" FontSize="12" TextColor="{StaticResource MutedInk}" VerticalOptions="Center" />
+                <Button Text="←" FontSize="16" MinimumHeightRequest="24" HeightRequest="24" WidthRequest="28" Padding="0"
+                        BackgroundColor="Transparent" BorderWidth="0" Clicked="OnFirstColumnsClicked"
+                        SemanticProperties.Description="Show first table columns" />
+                <Button Text="→" FontSize="16" MinimumHeightRequest="24" HeightRequest="24" WidthRequest="28" Padding="0"
+                        BackgroundColor="Transparent" BorderWidth="0" Clicked="OnLastColumnsClicked"
+                        SemanticProperties.Description="Show last table columns" />
+            </HorizontalStackLayout>
+            <Label Grid.Column="2" Text="{Binding GrandTotalText, StringFormat='Total incl. VAT: {0} RON'}" TextColor="{StaticResource MutedInk}" FontSize="14" />
+            <Label Grid.Column="3" Text="v1.0.0" TextColor="{StaticResource MutedInk}" FontSize="14" />
+        </Grid>
+    </Grid>
+</ContentPage>

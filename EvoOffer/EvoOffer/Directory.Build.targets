@@ -1,0 +1,22 @@
+<Project>
+    <!-- The Apple SDK normally relies on xcode-select, which may point to
+         standalone Command Line Tools. Apply the fallback to IDE builds too.
+         Explicit toolchain choices (including legacy preferences) take priority. -->
+    <Target Name="ResolveEvoOfferXcode" BeforeTargets="_DetectSdkLocations"
+            Condition="$([MSBuild]::IsOSPlatform('osx'))
+                And '$(XcodeLocation)' == '' And '$(MD_APPLE_SDK_ROOT)' == ''
+                And '$(DEVELOPER_DIR)' == ''
+                And !Exists('$(HOME)/Library/Preferences/maui/Settings.plist')
+                And !Exists('$(HOME)/Library/Preferences/Xamarin/Settings.plist')">
+        <Exec Command="/usr/bin/xcode-select --print-path 2&gt;/dev/null" ConsoleToMSBuild="true"
+              StandardOutputImportance="low" IgnoreExitCode="true">
+            <Output TaskParameter="ConsoleOutput" PropertyName="_EvoOfferSelectedDeveloperDir" />
+        </Exec>
+        <PropertyGroup Condition="!Exists('$(_EvoOfferSelectedDeveloperDir)/Platforms/MacOSX.platform')
+                And Exists('/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform')">
+            <XcodeLocation>/Applications/Xcode.app</XcodeLocation>
+        </PropertyGroup>
+        <Message Condition="'$(XcodeLocation)' != ''" Importance="normal"
+                 Text="Using $(XcodeLocation) because xcode-select did not select a full Xcode installation." />
+    </Target>
+</Project>

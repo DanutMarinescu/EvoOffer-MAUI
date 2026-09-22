@@ -1,0 +1,8 @@
+# Local IDE and macOS metadata
+.idea/
+.vs/
+.DS_Store
+
+# Build output
+[Bb]in/
+[Oo]bj/

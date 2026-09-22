@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="EvoOffer.Controls.QuantityInput"
+             x:Name="QuantityControl"
+             MinimumHeightRequest="40">
+    <Border x:Name="InputBorder" Style="{StaticResource InputBorderStyle}" Padding="0">
+        <Grid ColumnDefinitions="*,30" ColumnSpacing="0">
+            <Entry x:Name="QuantityEntry" Text="{Binding Text, Source={x:Reference QuantityControl}, Mode=TwoWay}"
+                   Keyboard="Numeric" HorizontalTextAlignment="Start" FontSize="16"
+                   Margin="10,0,0,0" MinimumWidthRequest="38" ReturnType="Done"
+                   SemanticProperties.Description="Quantity" />
+            <BoxView Grid.Column="1" WidthRequest="1" HorizontalOptions="Start" Color="#DFE6EE" />
+            <Grid Grid.Column="1" RowDefinitions="*,*" Margin="1,0,0,0">
+                <ImageButton Source="chevron_up.png" BackgroundColor="Transparent" Padding="9,5,9,2"
+                             MinimumHeightRequest="0" MinimumWidthRequest="0" CornerRadius="0"
+                             Clicked="OnIncreaseClicked" SemanticProperties.Description="Increase quantity" />
+                <ImageButton Grid.Row="1" Source="chevron_down.png" BackgroundColor="Transparent" Padding="9,2,9,5"
+                             MinimumHeightRequest="0" MinimumWidthRequest="0" CornerRadius="0"
+                             Clicked="OnDecreaseClicked" SemanticProperties.Description="Decrease quantity" />
+            </Grid>
+        </Grid>
+    </Border>
+</ContentView>

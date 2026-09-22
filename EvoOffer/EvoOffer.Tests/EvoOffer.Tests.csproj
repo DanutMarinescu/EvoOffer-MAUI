@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../EvoOffer/Models/*.cs" Link="Models/%(Filename)%(Extension)" />
+    <Compile Include="../EvoOffer/ViewModels/*.cs" Link="ViewModels/%(Filename)%(Extension)" />
+    <Compile Include="../EvoOffer/Services/*.cs" Link="Services/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

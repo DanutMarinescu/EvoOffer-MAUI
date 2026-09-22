@@ -1,0 +1,10 @@
+<Project>
+    <!-- Set output paths before SDK imports so restore, IDE builds and publish
+         all avoid file-provider metadata in the Documents folder. -->
+    <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('osx'))">
+        <ArtifactsPath Condition="'$(ArtifactsPath)' == '' And '$(UseArtifactsOutput)' != 'false' And '$(EVOOFFER_BUILD_ROOT)' != ''">$(EVOOFFER_BUILD_ROOT)</ArtifactsPath>
+        <ArtifactsPath Condition="'$(ArtifactsPath)' == '' And '$(UseArtifactsOutput)' != 'false'">$(HOME)/Library/Caches/EvoOffer/build</ArtifactsPath>
+        <!-- Ignore output left behind before the move to the cache directory. -->
+        <DefaultItemExcludes>$(DefaultItemExcludes);bin/**;obj/**</DefaultItemExcludes>
+    </PropertyGroup>
+</Project>
