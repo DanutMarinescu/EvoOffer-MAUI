@@ -1,8 +1,12 @@
 using System.Globalization;
+using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using EvoOffer.Models;
 using EvoOffer.Services;
 using EvoOffer.ViewModels;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
 
 // Run with: dotnet run --project EvoOffer.Tests
 // Exercises the production model and view model without a native MAUI runtime.
@@ -186,5 +190,121 @@ finally
     if (Directory.Exists(settingsDirectory))
         Directory.Delete(settingsDirectory, recursive: true);
 }
+
+var pdfIssuer = new AppSettings
+{
+    IssuerName = "Ștefan & Asociații",
+    Email = "office@example.ro",
+    PhoneNumber = "00722123456",
+    AddressLine1 = "Strada Ștefan cel Mare 12",
+    AddressLine2 = "București",
+    VatNumber = "00123456"
+};
+var pdfItems = new List<OfferLineItem>
+{
+    new(1, new CatalogItem("Instalații", "Țeavă și îmbinări", 180m), 2.5m, 9.5m),
+    new(2, new CatalogItem("Materiale", "Șurub", 0.05m), 1.1m, 10m)
+};
+var pdfOffer = new OfferPdfData("  Client român  ", "Vă mulțumim!\nOfertă valabilă 30 de zile.", pdfItems, pdfIssuer);
+pdfItems[0].Number = 99;
+pdfItems[0].Quantity = 100m;
+pdfItems[0].VatRate = 21m;
+pdfItems.Clear();
+pdfIssuer.IssuerName = "Changed issuer";
+pdfIssuer.Email = pdfIssuer.PhoneNumber = pdfIssuer.AddressLine1 = pdfIssuer.AddressLine2 = pdfIssuer.VatNumber = string.Empty;
+Check(pdfOffer.ClientName == "Client român" && pdfOffer.Message.Contains("Vă mulțumim!")
+    && pdfOffer.IssuerName == "Ștefan & Asociații"
+    && pdfOffer.IssuerContactLines.SequenceEqual(new[]
+        { "Strada Ștefan cel Mare 12", "București", "office@example.ro", "00722123456", "VAT number: 00123456" }),
+    "PDF snapshot preserves issuer contact settings and Romanian client/message text after edits");
+Check(pdfOffer.Items.Count == 2 && pdfOffer.Items[0].Number == 1 && pdfOffer.Items[0].Quantity == 2.5m
+    && pdfOffer.Items[0].VatRate == 9.5m && pdfOffer.Items[0].Name == "Țeavă și îmbinări"
+    && pdfOffer.Subtotal == 450.06m && pdfOffer.VatTotal == 42.76m && pdfOffer.GrandTotal == 492.82m,
+    "PDF snapshot preserves items and rounded totals after quantity/rate changes and collection reset");
+
+void CheckArgumentRejected(Action action, string description)
+{
+    var rejected = false;
+    try { action(); }
+    catch (ArgumentException) { rejected = true; }
+    Check(rejected, description);
+}
+
+var invalidPdfItem = new OfferLineItem(1, new CatalogItem("Test", "Invalid quantity", 1m), 1m)
+    { QuantityText = "invalid" };
+CheckArgumentRejected(() => new OfferPdfData("Client", null, new[] { invalidPdfItem }, pdfIssuer),
+    "PDF generation cannot snapshot a stale amount from an invalid quantity");
+CheckArgumentRejected(() => new OfferPdfData("Client", null, Array.Empty<OfferLineItem>(), pdfIssuer),
+    "Empty offers cannot become PDF snapshots");
+CheckArgumentRejected(() => new OfferPdfData(" ", null, new[] { line }, pdfIssuer),
+    "PDF snapshots require a client");
+
+var pdfDefaults = new OfferPdfOptions();
+foreach (var invalidOptions in new[]
+    {
+        pdfDefaults with { Margin = -1 }, pdfDefaults with { Margin = 1000 },
+        pdfDefaults with { FontSize = 0 }, pdfDefaults with { FontSize = float.NaN },
+        pdfDefaults with { FontFamily = " " }, pdfDefaults with { Title = "" },
+        pdfDefaults with { PageSize = new PageSize(0, 600) }
+    })
+    CheckArgumentRejected(() => new OfferPdfService(invalidOptions), "Invalid PDF defaults are rejected before rendering");
+
+var pdfService = new OfferPdfService(pdfDefaults);
+using (var readOnlyOutput = new MemoryStream(new byte[1], writable: false))
+    CheckArgumentRejected(() => pdfService.Generate(pdfOffer, readOnlyOutput), "Read-only PDF output streams are rejected");
+using (var invalidOutput = new MemoryStream())
+{
+    CheckArgumentRejected(() => pdfService.Generate(pdfOffer, invalidOutput, pdfDefaults with { Margin = float.NaN }),
+        "Invalid per-document PDF configuration is rejected");
+    Check(invalidOutput.Length == 0, "Invalid PDF configuration leaves the output stream untouched");
+}
+
+QuestPDF.Settings.License = LicenseType.Evaluation;
+Check(pdfService.IsSupported, "The desktop regression host supports the QuestPDF renderer");
+var pdfBytes = pdfService.Generate(pdfOffer);
+var pdfText = Encoding.Latin1.GetString(pdfBytes);
+Check(pdfText.StartsWith("%PDF-", StringComparison.Ordinal) && pdfText.TrimEnd().EndsWith("%%EOF", StringComparison.Ordinal)
+    && Regex.IsMatch(pdfText, @"/Type\s*/Page\b"), "Romanian text and rounded offer amounts produce a complete PDF");
+
+var landscapeOptions = pdfDefaults with
+{
+    PageSize = PageSizes.A4.Landscape(),
+    Margin = 24,
+    FontSize = 11,
+    AccentColor = Color.FromHex("#284A38"),
+    Title = "Custom offer",
+    FooterText = "Vă mulțumim pentru încredere!",
+    ShowPageNumbers = false
+};
+var landscapeOffer = new OfferPdfData("Landscape client", pdfOffer.Message,
+    new[] { new OfferLineItem(1, new CatalogItem("Instalații", "Țeavă și îmbinări", 180m), 2.5m, 9.5m) },
+    new AppSettings { IssuerName = pdfOffer.IssuerName });
+using (var output = new MemoryStream())
+{
+    pdfService.Generate(landscapeOffer, output, landscapeOptions);
+    Check(output.CanWrite && output.Length > 0, "PDF generation leaves the caller-owned stream open");
+    var customizedPdf = Encoding.Latin1.GetString(output.ToArray());
+    var mediaBoxes = Regex.Matches(customizedPdf, @"/MediaBox\s*\[\s*0(?:\.0+)?\s+0(?:\.0+)?\s+([0-9.]+)\s+([0-9.]+)\s*\]");
+    Check(mediaBoxes.Count > 0 && mediaBoxes.All(box =>
+        Math.Abs(float.Parse(box.Groups[1].Value, CultureInfo.InvariantCulture) - landscapeOptions.PageSize.Width) < 1
+        && Math.Abs(float.Parse(box.Groups[2].Value, CultureInfo.InvariantCulture) - landscapeOptions.PageSize.Height) < 1),
+        "Per-document landscape dimensions are applied to the generated PDF");
+    const string expectedTitle = "Custom offer - Landscape client";
+    Check(customizedPdf.Contains(expectedTitle, StringComparison.Ordinal)
+        || customizedPdf.Contains(Convert.ToHexString(Encoding.BigEndianUnicode.GetBytes(expectedTitle)), StringComparison.OrdinalIgnoreCase),
+        "Custom title and client are included in PDF metadata");
+    output.WriteByte(0);
+    Check(output.CanWrite, "The caller can continue using its output stream after generation");
+}
+
+var longOffer = new OfferPdfData("Client cu ofertă detaliată", "Lucrări și materiale pentru renovarea clădirii.",
+    Enumerable.Range(1, 150).Select(number => new OfferLineItem(number,
+        new CatalogItem("Instalații și materiale", $"Reper {number}: țeavă, îmbinări și accesorii pentru încălzire", 12.34m), 2.5m, 21m)),
+    new AppSettings { IssuerName = "Ștefan & Asociații" });
+var longPdfText = Encoding.Latin1.GetString(pdfService.Generate(longOffer,
+    pdfDefaults with { FooterText = "Ofertă detaliată — București" }));
+Check(Regex.Matches(longPdfText, @"/Type\s*/Page\b").Count > 1
+    && longPdfText.TrimEnd().EndsWith("%%EOF", StringComparison.Ordinal),
+    "Long Romanian offers render across multiple pages with a footer and page numbering");
 
 Console.WriteLine($"Passed {checks} regression checks.");

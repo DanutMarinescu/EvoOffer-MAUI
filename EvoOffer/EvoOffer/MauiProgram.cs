@@ -1,3 +1,4 @@
+using EvoOffer.Services;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.Handlers;
 
@@ -9,6 +10,16 @@ public static class MauiProgram
     {
         var builder = MauiApp.CreateBuilder();
         builder.UseMauiApp<App>();
+
+#if WINDOWS
+        // Settings initializes native dependencies; only access it on supported MAUI targets.
+        // Choose the appropriate QuestPDF license before production use:
+        // https://www.questpdf.com/license/configuration.html
+        QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Evaluation;
+#endif
+        // Configure PDF layout defaults here; callers can also override them per document.
+        builder.Services.AddSingleton(new OfferPdfOptions());
+        builder.Services.AddSingleton<IOfferPdfService, OfferPdfService>();
 
 #if IOS || MACCATALYST
         builder.ConfigureMauiHandlers(handlers =>

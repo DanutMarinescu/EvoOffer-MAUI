@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="QuestPDF" Version="2026.9.0" />
     <Compile Include="../EvoOffer/Models/*.cs" Link="Models/%(Filename)%(Extension)" />
     <Compile Include="../EvoOffer/ViewModels/*.cs" Link="ViewModels/%(Filename)%(Extension)" />
     <Compile Include="../EvoOffer/Services/*.cs" Link="Services/%(Filename)%(Extension)" />

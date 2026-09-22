@@ -2,9 +2,10 @@
 
     <PropertyGroup>
         <!-- Android is temporarily disabled. Add net10.0-android back when its SDK is available. -->
-        <!-- Explicit Apple SDK versions select the installed Xcode 27 toolchain. -->
-        <TargetFrameworks Condition="!$([MSBuild]::IsOSPlatform('linux'))">net10.0-ios27.0;net10.0-maccatalyst27.0</TargetFrameworks>
-        <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net10.0-windows10.0.19041.0</TargetFrameworks>
+        <!-- Restore only targets supported by the build host. Windows does not need Apple workloads. -->
+        <!-- Explicit Apple SDK versions select the installed Xcode 27 toolchain on macOS. -->
+        <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('osx'))">net10.0-ios27.0;net10.0-maccatalyst27.0</TargetFrameworks>
+        <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">net10.0-windows10.0.19041.0</TargetFrameworks>
 
         <OutputType>Exe</OutputType>
         <RootNamespace>EvoOffer</RootNamespace>
@@ -28,15 +29,20 @@
         <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
         <ApplicationVersion>1</ApplicationVersion>
 
-        <!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
-        <WindowsPackageType>None</WindowsPackageType>
-
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
         <!-- The Xcode 27 Mac Catalyst workload requires Catalyst 17 (macOS 14). -->
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">17.0</SupportedOSPlatformVersion>
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
         <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
+        <!-- Run directly from the build/publish folder, with the Windows App SDK bundled. -->
+        <WindowsPackageType>None</WindowsPackageType>
+        <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+        <!-- Keep the RID local to the app instead of passing it into Windows SDK tooling projects. -->
+        <RuntimeIdentifier Condition="'$(RuntimeIdentifierOverride)' != ''">$(RuntimeIdentifierOverride)</RuntimeIdentifier>
     </PropertyGroup>
 
     <ItemGroup>
@@ -52,6 +58,11 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)"/>
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0"/>
+        <PackageReference Include="QuestPDF" Version="2026.9.0">
+            <!-- Apple clients use the service contract but cannot run this renderer.
+                 Do not copy its unused font archive into the Apple app bundle. -->
+            <ExcludeAssets Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios' Or $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">build;buildTransitive</ExcludeAssets>
+        </PackageReference>
     </ItemGroup>
 
 </Project>
