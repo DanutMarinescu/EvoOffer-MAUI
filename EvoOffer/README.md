@@ -24,6 +24,13 @@ The defaults are Debug and x64. Pass `-Configuration Release` for a release buil
 or `-Architecture arm64` for a Windows ARM64 PC. In Visual Studio, select the
 **EvoOffer** startup project and the **Windows Machine** target to build and run.
 
+The Windows app always uses the light theme, including native controls, so
+Windows dark mode does not recolour controls against the app's light backgrounds.
+To check this, launch with Windows app mode set to Dark, open Settings and the
+dropdowns, and focus the text fields. Switch between Light and Dark while the
+app is open and confirm that the app's colours stay consistent and text remains
+readable.
+
 ## Package for Windows
 
 From PowerShell on Windows, run:
