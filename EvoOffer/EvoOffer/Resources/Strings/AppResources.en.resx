@@ -1,0 +1,707 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms</value>
+  </resheader>
+  <data name="Actions" xml:space="preserve">
+    <value>Actions</value>
+  </data>
+  <data name="Add" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="AddressLine1" xml:space="preserve">
+    <value>Address line 1</value>
+  </data>
+  <data name="AddressLine2" xml:space="preserve">
+    <value>Address line 2</value>
+  </data>
+  <data name="AmbiguousProductStatus" xml:space="preserve">
+    <value>{0} has different prices for the same size and color. Correct its CSV attributes and import again.</value>
+  </data>
+  <data name="AmbiguousProductValidation" xml:space="preserve">
+    <value>This product has different prices for the same size and color. Correct its CSV attributes before adding it.</value>
+  </data>
+  <data name="AppSubtitle" xml:space="preserve">
+    <value>Create professional offers quickly and easily</value>
+  </data>
+  <data name="AppTitle" xml:space="preserve">
+    <value>Offer Generator</value>
+  </data>
+  <data name="AppearsInPdf" xml:space="preserve">
+    <value> (will appear in PDF)</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>Browse…</value>
+  </data>
+  <data name="BrowseDataFile" xml:space="preserve">
+    <value>Browse for a CSV data file</value>
+  </data>
+  <data name="BrowseLogo" xml:space="preserve">
+    <value>Browse for a logo image</value>
+  </data>
+  <data name="BrowseSaveDirectory" xml:space="preserve">
+    <value>Browse for a PDF save folder</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="CatalogImportedHelp" xml:space="preserve">
+    <value>Successfully imported {0} products. Select a category on the main screen to browse them.</value>
+  </data>
+  <data name="CatalogUnavailable" xml:space="preserve">
+    <value>Catalog unavailable</value>
+  </data>
+  <data name="Category" xml:space="preserve">
+    <value>Category</value>
+  </data>
+  <data name="CheckOffer" xml:space="preserve">
+    <value>Check your offer</value>
+  </data>
+  <data name="CheckVatPercentage" xml:space="preserve">
+    <value>Check VAT percentage</value>
+  </data>
+  <data name="ChooseCsvFile" xml:space="preserve">
+    <value>Choose an available file with a .csv extension.</value>
+  </data>
+  <data name="CityPostalCodeCountry" xml:space="preserve">
+    <value>City, postal code, country</value>
+  </data>
+  <data name="ClearSelection" xml:space="preserve">
+    <value>Clear selection</value>
+  </data>
+  <data name="ClientName" xml:space="preserve">
+    <value>Client name</value>
+  </data>
+  <data name="ClientNameRequired" xml:space="preserve">
+    <value>Enter a client name before generating an offer.</value>
+  </data>
+  <data name="Color" xml:space="preserve">
+    <value>Color</value>
+  </data>
+  <data name="Columns" xml:space="preserve">
+    <value>Columns</value>
+  </data>
+  <data name="ContactData" xml:space="preserve">
+    <value>Contact data</value>
+  </data>
+  <data name="Controls_AccessNotSaved" xml:space="preserve">
+    <value>Access to the selected item could not be saved.</value>
+  </data>
+  <data name="Controls_CategoryClose" xml:space="preserve">
+    <value>Close the category list</value>
+  </data>
+  <data name="Controls_CategoryDescription" xml:space="preserve">
+    <value>Product category: {0}</value>
+  </data>
+  <data name="Controls_CategoryDismiss" xml:space="preserve">
+    <value>Close category list</value>
+  </data>
+  <data name="Controls_CategoryLevel" xml:space="preserve">
+    <value>Subcategory, level {0}</value>
+  </data>
+  <data name="Controls_CategoryOpen" xml:space="preserve">
+    <value>Open the category list</value>
+  </data>
+  <data name="Controls_CategoryRoot" xml:space="preserve">
+    <value>Main category</value>
+  </data>
+  <data name="Controls_CategoryTitle" xml:space="preserve">
+    <value>Select category</value>
+  </data>
+  <data name="Controls_ChooseCsv" xml:space="preserve">
+    <value>Choose a CSV data file</value>
+  </data>
+  <data name="Controls_ChooseLogo" xml:space="preserve">
+    <value>Choose a logo image</value>
+  </data>
+  <data name="Controls_ColorBlack" xml:space="preserve">
+    <value>Black</value>
+  </data>
+  <data name="Controls_ColorBlue" xml:space="preserve">
+    <value>Blue</value>
+  </data>
+  <data name="Controls_ColorChannelDescription" xml:space="preserve">
+    <value>{0}, {1} channel</value>
+  </data>
+  <data name="Controls_ColorChannelHint" xml:space="preserve">
+    <value>Adjust from 0 to 255.</value>
+  </data>
+  <data name="Controls_ColorCharcoal" xml:space="preserve">
+    <value>Charcoal</value>
+  </data>
+  <data name="Controls_ColorChoose" xml:space="preserve">
+    <value>Choose</value>
+  </data>
+  <data name="Controls_ColorClosePicker" xml:space="preserve">
+    <value>Close {0} picker</value>
+  </data>
+  <data name="Controls_ColorDone" xml:space="preserve">
+    <value>Done</value>
+  </data>
+  <data name="Controls_ColorGold" xml:space="preserve">
+    <value>Gold</value>
+  </data>
+  <data name="Controls_ColorGreen" xml:space="preserve">
+    <value>Green</value>
+  </data>
+  <data name="Controls_ColorHexDescription" xml:space="preserve">
+    <value>{0} hex code</value>
+  </data>
+  <data name="Controls_ColorHexError" xml:space="preserve">
+    <value>Enter a valid hex color, such as #147EF0 (3 or 6 digits).</value>
+  </data>
+  <data name="Controls_ColorHexHint" xml:space="preserve">
+    <value>Enter 3 or 6 hexadecimal digits, optionally starting with #.</value>
+  </data>
+  <data name="Controls_ColorInvalidSelection" xml:space="preserve">
+    <value>Choose a valid color for {0} before saving.</value>
+  </data>
+  <data name="Controls_ColorNavy" xml:space="preserve">
+    <value>Navy</value>
+  </data>
+  <data name="Controls_ColorOpenPicker" xml:space="preserve">
+    <value>Choose {0}</value>
+  </data>
+  <data name="Controls_ColorOptionsHint" xml:space="preserve">
+    <value>Choose a swatch or adjust red, green and blue.</value>
+  </data>
+  <data name="Controls_ColorOrange" xml:space="preserve">
+    <value>Orange</value>
+  </data>
+  <data name="Controls_ColorPurple" xml:space="preserve">
+    <value>Purple</value>
+  </data>
+  <data name="Controls_ColorRed" xml:space="preserve">
+    <value>Red</value>
+  </data>
+  <data name="Controls_ColorSlate" xml:space="preserve">
+    <value>Slate</value>
+  </data>
+  <data name="Controls_ColorSwatchDescription" xml:space="preserve">
+    <value>{0}, {1}. Choose color.</value>
+  </data>
+  <data name="Controls_ColorTeal" xml:space="preserve">
+    <value>Teal</value>
+  </data>
+  <data name="Controls_ColorWhite" xml:space="preserve">
+    <value>White</value>
+  </data>
+  <data name="Controls_CsvFormat" xml:space="preserve">
+    <value>Choose a CSV file for the data file.</value>
+  </data>
+  <data name="Controls_CsvUnavailable" xml:space="preserve">
+    <value>The selected data file is no longer available.</value>
+  </data>
+  <data name="Controls_FileWindowUnavailable" xml:space="preserve">
+    <value>No window is available to show the file browser.</value>
+  </data>
+  <data name="Controls_FolderUnsupported" xml:space="preserve">
+    <value>Folder selection is not supported on this platform.</value>
+  </data>
+  <data name="Controls_FolderWindowUnavailable" xml:space="preserve">
+    <value>No window is available to show the folder browser.</value>
+  </data>
+  <data name="Controls_LogoFormat" xml:space="preserve">
+    <value>Choose a PNG, JPEG, or WebP image for the logo.</value>
+  </data>
+  <data name="Controls_LogoUnavailable" xml:space="preserve">
+    <value>The selected logo image is no longer available.</value>
+  </data>
+  <data name="Controls_NoLocalPath" xml:space="preserve">
+    <value>The selected item has no local path.</value>
+  </data>
+  <data name="Controls_PathAccessNotSaved" xml:space="preserve">
+    <value>Access to the selected paths could not be remembered for the next launch.</value>
+  </data>
+  <data name="Controls_QuantityHint" xml:space="preserve">
+    <value>Enter the item quantity</value>
+  </data>
+  <data name="Controls_QuantityInvalidHint" xml:space="preserve">
+    <value>Enter a quantity between 1 and 999999</value>
+  </data>
+  <data name="Controls_SelectedSuffix" xml:space="preserve">
+    <value>, selected</value>
+  </data>
+  <data name="CsvImportFailed" xml:space="preserve">
+    <value>CSV import failed</value>
+  </data>
+  <data name="CsvReadFailedHelp" xml:space="preserve">
+    <value>The CSV file could not be read. Select an available CSV file and try again.</value>
+  </data>
+  <data name="CustomOfferText" xml:space="preserve">
+    <value>Custom offer text</value>
+  </data>
+  <data name="CustomText" xml:space="preserve">
+    <value>Custom text</value>
+  </data>
+  <data name="CustomTextPlaceholder" xml:space="preserve">
+    <value>Add a personal message to your offer…</value>
+  </data>
+  <data name="DataFile" xml:space="preserve">
+    <value>Data file</value>
+  </data>
+  <data name="DataFileCategoriesHelp" xml:space="preserve">
+    <value>Use &gt; for subcategories and | for multiple category paths, for example: A &gt; B &gt; C | D. Browse again to reimport an updated file.</value>
+  </data>
+  <data name="DataFileDimensionsHelp" xml:space="preserve">
+    <value>If size is blank, Atribute: Lungime Mm (variante de produs), Atribute: Latime Mm (variante de produs), and Atribute: Grosime Mm (variante de produs) combine into length mm x width mm x thickness mm. Empty dimensions are skipped; thickness alone, for example, shows 22 mm.</value>
+  </data>
+  <data name="DataFilePath" xml:space="preserve">
+    <value>Data file path</value>
+  </data>
+  <data name="DataFileRequiredHeadersHelp" xml:space="preserve">
+    <value>Choose a CSV file, then Save settings to validate and import it. Required headers: Denumire Produs, Pret, Categorie / Categorii. Pret includes VAT.</value>
+  </data>
+  <data name="DataFileSelectionFailed" xml:space="preserve">
+    <value>Could not select data file</value>
+  </data>
+  <data name="DataFileVariantHeadersHelp" xml:space="preserve">
+    <value>Optional variant headers: Atribute: Culoare (variante de produs), Atribute: Culoare (lista), Atribute: Cantitate (variante de produs), Atribute: Cantitate_11 (lista), Atribute: Marime (variante de produs). Matching product names are grouped, with size, color and price selected from each row.</value>
+  </data>
+  <data name="DecreaseQuantity" xml:space="preserve">
+    <value>Decrease quantity</value>
+  </data>
+  <data name="DefaultOfferMessage" xml:space="preserve">
+    <value>Thank you for your interest in our products and services. Below you will find our best offer tailored to your needs. If you have any questions, please do not hesitate to contact us.</value>
+  </data>
+  <data name="DefaultOfferMessageHelp" xml:space="preserve">
+    <value>Use this message for the current offer and whenever you reset the form.</value>
+  </data>
+  <data name="DefaultOfferMessageLabel" xml:space="preserve">
+    <value>Default offer message</value>
+  </data>
+  <data name="Email" xml:space="preserve">
+    <value>E-mail</value>
+  </data>
+  <data name="EmailAddress" xml:space="preserve">
+    <value>E-mail address</value>
+  </data>
+  <data name="EmailPlaceholder" xml:space="preserve">
+    <value>name@example.com</value>
+  </data>
+  <data name="EmailValidation" xml:space="preserve">
+    <value>Enter a valid e-mail address, such as name@example.com.</value>
+  </data>
+  <data name="EmptyOfferHint" xml:space="preserve">
+    <value>Choose an item above and select Add.</value>
+  </data>
+  <data name="EmptyOfferTitle" xml:space="preserve">
+    <value>Your offer starts here</value>
+  </data>
+  <data name="EnterClientName" xml:space="preserve">
+    <value>Enter client name</value>
+  </data>
+  <data name="Exit" xml:space="preserve">
+    <value>Exit</value>
+  </data>
+  <data name="FileAccessNotSaved" xml:space="preserve">
+    <value>Could not remember file access</value>
+  </data>
+  <data name="FileAccessNotSavedHelp" xml:space="preserve">
+    <value>Your settings were saved, but access to the selected files or folder could not be remembered. Try saving again, or reselect the paths with Browse.</value>
+  </data>
+  <data name="GenerateOffer" xml:space="preserve">
+    <value>Generate Offer</value>
+  </data>
+  <data name="Generating" xml:space="preserve">
+    <value>Generating…</value>
+  </data>
+  <data name="GrandTotalSummary" xml:space="preserve">
+    <value>Total incl. VAT: {0} RON</value>
+  </data>
+  <data name="ImportComplete" xml:space="preserve">
+    <value>Import complete</value>
+  </data>
+  <data name="Import_ColorAttribute" xml:space="preserve">
+    <value>color</value>
+  </data>
+  <data name="Import_ConflictingAttributes" xml:space="preserve">
+    <value>A product row has conflicting {0} attributes. Keep only one {0} value per row.</value>
+  </data>
+  <data name="Import_DuplicateHeader" xml:space="preserve">
+    <value>The header '{0}' appears more than once.</value>
+  </data>
+  <data name="Import_FieldCount" xml:space="preserve">
+    <value>Expected {0} fields to match the header row.</value>
+  </data>
+  <data name="Import_InvalidCategory" xml:space="preserve">
+    <value>Categories cannot be empty. Use &gt; between levels and | between category paths.</value>
+  </data>
+  <data name="Import_InvalidEncoding" xml:space="preserve">
+    <value>The file contains invalid text encoding. Save it as UTF-8 CSV and try again.</value>
+  </data>
+  <data name="Import_InvalidPrice" xml:space="preserve">
+    <value>Pret must be a non-negative decimal price without currency symbols or thousands separators.</value>
+  </data>
+  <data name="Import_MissingHeaders" xml:space="preserve">
+    <value>The first row is missing required headers: {0}.</value>
+  </data>
+  <data name="Import_NameRequired" xml:space="preserve">
+    <value>Denumire Produs cannot be empty.</value>
+  </data>
+  <data name="Import_NoProducts" xml:space="preserve">
+    <value>The CSV must contain at least one product after the header.</value>
+  </data>
+  <data name="Import_PriceTooLarge" xml:space="preserve">
+    <value>Pret is too large to calculate offer totals safely.</value>
+  </data>
+  <data name="Import_RequiredHeaderRow" xml:space="preserve">
+    <value>The first row must contain: Denumire Produs, Pret, Categorie / Categorii.</value>
+  </data>
+  <data name="Import_RowError" xml:space="preserve">
+    <value>Row {0}: {1}</value>
+  </data>
+  <data name="Import_SizeAttribute" xml:space="preserve">
+    <value>size</value>
+  </data>
+  <data name="Import_TextAfterQuote" xml:space="preserve">
+    <value>Unexpected text after a closing CSV quote.</value>
+  </data>
+  <data name="Import_UnclosedQuote" xml:space="preserve">
+    <value>A quoted CSV field is missing its closing quote.</value>
+  </data>
+  <data name="Import_UnexpectedQuote" xml:space="preserve">
+    <value>Unexpected quote in a CSV field. Enclose the entire field in double quotes and escape quotes as "".</value>
+  </data>
+  <data name="Importing" xml:space="preserve">
+    <value>Importing…</value>
+  </data>
+  <data name="IncreaseQuantity" xml:space="preserve">
+    <value>Increase quantity</value>
+  </data>
+  <data name="IssuerName" xml:space="preserve">
+    <value>Issuer name</value>
+  </data>
+  <data name="Item" xml:space="preserve">
+    <value>Item</value>
+  </data>
+  <data name="ItemQuantityValidation" xml:space="preserve">
+    <value>Item {0}: Enter a quantity between 1 and 999,999.</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="LanguageHelp" xml:space="preserve">
+    <value>Applies to the interface, PDF labels, dates and number formatting after saving settings. Custom messages are preserved.</value>
+  </data>
+  <data name="Logo" xml:space="preserve">
+    <value>Logo</value>
+  </data>
+  <data name="LogoHelp" xml:space="preserve">
+    <value>Optional image displayed on generated offers.</value>
+  </data>
+  <data name="LogoImagePath" xml:space="preserve">
+    <value>Logo image path</value>
+  </data>
+  <data name="NoCsvSelected" xml:space="preserve">
+    <value>No CSV file selected</value>
+  </data>
+  <data name="NoLogoSelected" xml:space="preserve">
+    <value>No logo selected</value>
+  </data>
+  <data name="OfferItemsRequired" xml:space="preserve">
+    <value>Add at least one item before generating an offer.</value>
+  </data>
+  <data name="OfferResetStatus" xml:space="preserve">
+    <value>Offer reset. Ready for a new client.</value>
+  </data>
+  <data name="Ok" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="PathSelectionFailed" xml:space="preserve">
+    <value>Could not select path</value>
+  </data>
+  <data name="PathSelectionFailedHelp" xml:space="preserve">
+    <value>The file browser could not complete your selection. Please try again.</value>
+  </data>
+  <data name="PdfPreviewOpenFailed" xml:space="preserve">
+    <value>Could not open PDF preview</value>
+  </data>
+  <data name="PdfPreviewPlatformUnavailable" xml:space="preserve">
+    <value>PDF preview is currently available in the Windows app. It is not yet available on this platform.</value>
+  </data>
+  <data name="PdfPreviewUnavailable" xml:space="preserve">
+    <value>PDF preview unavailable</value>
+  </data>
+  <data name="PdfSaveFailed" xml:space="preserve">
+    <value>Could not save PDF</value>
+  </data>
+  <data name="PdfSaveFailedHelp" xml:space="preserve">
+    <value>The offer PDF could not be generated or saved. Check that the logo image is available and the save directory is writable. Your offer is still available to edit.</value>
+  </data>
+  <data name="PdfSavedPreviewFailedHelp" xml:space="preserve">
+    <value>Your PDF was saved to {0}, but the preview could not be opened.</value>
+  </data>
+  <data name="PdfViewerInstallHelp" xml:space="preserve">
+    <value>Install the Microsoft Edge WebView2 Runtime, then generate your offer again to preview the PDF.</value>
+  </data>
+  <data name="PdfViewerRequired" xml:space="preserve">
+    <value>PDF viewer required</value>
+  </data>
+  <data name="PhoneNumber" xml:space="preserve">
+    <value>Phone number</value>
+  </data>
+  <data name="Preview_Close" xml:space="preserve">
+    <value>Close preview</value>
+  </data>
+  <data name="Preview_LoadError" xml:space="preserve">
+    <value>The PDF preview could not be loaded. Try again or close the preview.</value>
+  </data>
+  <data name="Preview_Loading" xml:space="preserve">
+    <value>Loading PDF preview…</value>
+  </data>
+  <data name="Preview_OfferDescription" xml:space="preserve">
+    <value>Generated offer PDF</value>
+  </data>
+  <data name="Preview_OfferInstructions" xml:space="preserve">
+    <value>Use the PDF toolbar to zoom, save or print your offer.</value>
+  </data>
+  <data name="Preview_OfferTitle" xml:space="preserve">
+    <value>Offer preview</value>
+  </data>
+  <data name="Preview_Retry" xml:space="preserve">
+    <value>Retry</value>
+  </data>
+  <data name="Preview_ReturnEditor" xml:space="preserve">
+    <value>Return to the offer editor.</value>
+  </data>
+  <data name="Preview_ReturnSettings" xml:space="preserve">
+    <value>Return to Settings.</value>
+  </data>
+  <data name="Preview_TemplateDescription" xml:space="preserve">
+    <value>Sample template PDF</value>
+  </data>
+  <data name="Preview_TemplateInstructions" xml:space="preserve">
+    <value>Sample products with your settings. Use the PDF toolbar to zoom or print.</value>
+  </data>
+  <data name="Preview_TemplateTitle" xml:space="preserve">
+    <value>Template preview</value>
+  </data>
+  <data name="Preview_ViewerStopped" xml:space="preserve">
+    <value>The PDF viewer stopped. Close the preview and open it again.</value>
+  </data>
+  <data name="PreviousSettingsUnchanged" xml:space="preserve">
+    <value>
+
+Your previous catalog and settings are unchanged.</value>
+  </data>
+  <data name="PrimaryColor" xml:space="preserve">
+    <value>Primary color</value>
+  </data>
+  <data name="ProductAdded" xml:space="preserve">
+    <value>Added {0}.</value>
+  </data>
+  <data name="ProductColor" xml:space="preserve">
+    <value>Product color</value>
+  </data>
+  <data name="ProductOrService" xml:space="preserve">
+    <value>Product or service</value>
+  </data>
+  <data name="ProductRemoved" xml:space="preserve">
+    <value>Removed {0}.</value>
+  </data>
+  <data name="ProductSize" xml:space="preserve">
+    <value>Product size</value>
+  </data>
+  <data name="Quantity" xml:space="preserve">
+    <value>Quantity</value>
+  </data>
+  <data name="QuantityValidation" xml:space="preserve">
+    <value>Enter a quantity between 1 and 999,999.</value>
+  </data>
+  <data name="RemoveItem" xml:space="preserve">
+    <value>Remove item</value>
+  </data>
+  <data name="RemoveLogo" xml:space="preserve">
+    <value>Remove logo</value>
+  </data>
+  <data name="RemoveProductDescription" xml:space="preserve">
+    <value>Remove {0}</value>
+  </data>
+  <data name="Reset" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+  <data name="SaveDirectory" xml:space="preserve">
+    <value>Save directory</value>
+  </data>
+  <data name="SaveDirectoryHelp" xml:space="preserve">
+    <value>Generated PDFs are saved in this folder. The folder is created when needed.</value>
+  </data>
+  <data name="SaveSettings" xml:space="preserve">
+    <value>Save settings</value>
+  </data>
+  <data name="SavedCatalogReadFailed" xml:space="preserve">
+    <value>The saved CSV file could not be read. Open Settings and select an available CSV file.</value>
+  </data>
+  <data name="SecondaryColor" xml:space="preserve">
+    <value>Secondary color</value>
+  </data>
+  <data name="SelectCategory" xml:space="preserve">
+    <value>Select category</value>
+  </data>
+  <data name="SelectColor" xml:space="preserve">
+    <value>Select color</value>
+  </data>
+  <data name="SelectItem" xml:space="preserve">
+    <value>Select item</value>
+  </data>
+  <data name="SelectProductToAdd" xml:space="preserve">
+    <value>Select a category and an item to add.</value>
+  </data>
+  <data name="SelectSize" xml:space="preserve">
+    <value>Select size</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="SettingsLoadFailed" xml:space="preserve">
+    <value>Could not read or create settings.json. Using default settings; open Settings to save again.</value>
+  </data>
+  <data name="SettingsNotSaved" xml:space="preserve">
+    <value>Settings not saved</value>
+  </data>
+  <data name="SettingsSaveFailedHelp" xml:space="preserve">
+    <value>Could not write settings.json. Check available storage and try again. Your previous catalog is unchanged.</value>
+  </data>
+  <data name="ShowFirstColumns" xml:space="preserve">
+    <value>Show first table columns</value>
+  </data>
+  <data name="ShowLastColumns" xml:space="preserve">
+    <value>Show last table columns</value>
+  </data>
+  <data name="Size" xml:space="preserve">
+    <value>Size</value>
+  </data>
+  <data name="StatusCatalogImported" xml:space="preserve">
+    <value>Imported {0} products.</value>
+  </data>
+  <data name="StatusCatalogLoaded" xml:space="preserve">
+    <value>Loaded {0} products.</value>
+  </data>
+  <data name="StatusFileAccessNotSaved" xml:space="preserve">
+    <value>Settings saved, but access to the selected paths could not be remembered.</value>
+  </data>
+  <data name="StatusGeneratingPdf" xml:space="preserve">
+    <value>Generating offer PDF…</value>
+  </data>
+  <data name="StatusLoadingCatalog" xml:space="preserve">
+    <value>Loading product catalog…</value>
+  </data>
+  <data name="StatusPdfSaveFailed" xml:space="preserve">
+    <value>Could not generate or save the offer PDF. Check the logo and save directory in Settings.</value>
+  </data>
+  <data name="StatusPdfSaved" xml:space="preserve">
+    <value>Offer PDF saved to {0}</value>
+  </data>
+  <data name="StatusReady" xml:space="preserve">
+    <value>Ready</value>
+  </data>
+  <data name="StatusSavedCatalogUnavailable" xml:space="preserve">
+    <value>Could not load the saved CSV. Open Settings to select and import it again.</value>
+  </data>
+  <data name="StatusSettingsSaved" xml:space="preserve">
+    <value>Settings saved.</value>
+  </data>
+  <data name="StreetAndNumber" xml:space="preserve">
+    <value>Street and number</value>
+  </data>
+  <data name="TemplateColors" xml:space="preserve">
+    <value>Template colors</value>
+  </data>
+  <data name="TemplateColorsHelp" xml:space="preserve">
+    <value>Primary: headings and bars. Secondary: supporting details and accents. Text: body copy. Applies to all templates.</value>
+  </data>
+  <data name="TemplatePreviewFailed" xml:space="preserve">
+    <value>Could not preview template</value>
+  </data>
+  <data name="TemplatePreviewFailedHelp" xml:space="preserve">
+    <value>Check that your selected logo is available and the Microsoft Edge WebView2 Runtime is installed, then try again.</value>
+  </data>
+  <data name="Template_ClassicDescription" xml:space="preserve">
+    <value>Traditional letterhead with a navy table heading and total bar.</value>
+  </data>
+  <data name="Template_ClassicName" xml:space="preserve">
+    <value>Classic</value>
+  </data>
+  <data name="Template_MinimalDescription" xml:space="preserve">
+    <value>Compact letterhead, fine table rules and understated totals.</value>
+  </data>
+  <data name="Template_MinimalName" xml:space="preserve">
+    <value>Minimal</value>
+  </data>
+  <data name="Template_ModernDescription" xml:space="preserve">
+    <value>Bold title band, recipient panel and spacious product cards.</value>
+  </data>
+  <data name="Template_ModernName" xml:space="preserve">
+    <value>Modern</value>
+  </data>
+  <data name="Template_PreviewButton" xml:space="preserve">
+    <value>Preview PDF with my details</value>
+  </data>
+  <data name="Template_PreviewGenerating" xml:space="preserve">
+    <value>Generating preview…</value>
+  </data>
+  <data name="Template_PreviewHint" xml:space="preserve">
+    <value>Preview sample products with your unsaved template colors, company details, language, message and VAT rate.</value>
+  </data>
+  <data name="Template_PreviewNote" xml:space="preserve">
+    <value>The PDF preview uses sample products and your current settings. It does not save an offer.</value>
+  </data>
+  <data name="Template_PreviewWindowsOnly" xml:space="preserve">
+    <value>Full PDF previews with your details are available in the Windows app.</value>
+  </data>
+  <data name="Template_SampleDescription" xml:space="preserve">
+    <value>{0} sample offer. {1}</value>
+  </data>
+  <data name="Template_SampleNote" xml:space="preserve">
+    <value>Layout sample shown in default colors. Save settings to use your selected template and colors for new offers.</value>
+  </data>
+  <data name="Template_Title" xml:space="preserve">
+    <value>PDF template</value>
+  </data>
+  <data name="TextColor" xml:space="preserve">
+    <value>Text color</value>
+  </data>
+  <data name="TotalHeader" xml:space="preserve">
+    <value>Total (RON)
+VAT included</value>
+  </data>
+  <data name="UnitPriceHeader" xml:space="preserve">
+    <value>Unit price (RON)
+VAT excluded</value>
+  </data>
+  <data name="UnspecifiedAttribute" xml:space="preserve">
+    <value>— (not specified)</value>
+  </data>
+  <data name="UnspecifiedAttributeNumbered" xml:space="preserve">
+    <value>— (not specified {0})</value>
+  </data>
+  <data name="VatColumnHeader" xml:space="preserve">
+    <value>VAT {0}%
+(RON)</value>
+  </data>
+  <data name="VatNumber" xml:space="preserve">
+    <value>VAT number</value>
+  </data>
+  <data name="VatPercentage" xml:space="preserve">
+    <value>VAT percentage</value>
+  </data>
+  <data name="VatPercentageHelp" xml:space="preserve">
+    <value>Used to calculate catalog prices excluding VAT from the CSV prices. Existing offer lines keep their net unit prices and recalculate VAT. Use 0 for no VAT.</value>
+  </data>
+  <data name="VatPercentageLabel" xml:space="preserve">
+    <value>VAT percentage (%)</value>
+  </data>
+  <data name="VatRateValidation" xml:space="preserve">
+    <value>Enter a VAT percentage from 0 to 100, with up to two decimal places.</value>
+  </data>
+</root>

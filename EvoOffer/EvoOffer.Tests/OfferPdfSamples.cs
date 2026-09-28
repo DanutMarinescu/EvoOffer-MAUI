@@ -75,6 +75,39 @@ internal static class OfferPdfSamples
                     "Analiză și implementare, documentație tehnică și instruirea echipei beneficiarului.", 90)), 120m), 1m, 0m)
             }, stressIssuer);
 
+        var variantCatalog = CatalogCsvImporter.Import(new StringReader("""
+            Denumire Produs,Pret,Categorie / Categorii,Atribute: Culoare (variante de produs),Atribute: Cantitate (variante de produs)
+            Lac Loba Viva,455,Lacuri > Loba,Semi-Mat,5L
+            Lac Loba Viva,485,Lacuri > Loba,Mat,5L
+            Lac Loba Viva,885,Lacuri > Loba,Semi-Mat,10L
+            Lac Bona Traffic HD 4.95L - Bicomponent pentru trafic intens,1130,Lacuri > Bona,Extra-Mat,4.95L
+            Parchet stejar,242,Pardoseli,Natur,600 mm x 90 mm x 22 mm
+            Grund,121,Grunduri,,5L
+            Vopsea,100,Vopsele,Alb,
+            Serviciu montaj,150,Servicii,,
+            """), 21m);
+        var largeVariant = new OfferLineItem(1, variantCatalog.Items[0], 2.5m, 21m) { SelectedSize = "10L" };
+        var matteVariant = new OfferLineItem(2, variantCatalog.Items[0], 1m, 21m) { SelectedColor = "Mat" };
+        var variantItems = new[] { largeVariant, matteVariant }
+            .Concat(variantCatalog.Items.Skip(1).Select((item, index) => new OfferLineItem(index + 3, item, 1m, 21m)))
+            .ToArray();
+        var variants = new OfferPdfData("Client cu variante de produs", null,
+            variantItems, referenceIssuer);
+        var englishVariants = new OfferPdfData("Product variants customer", null, variantItems,
+            new AppSettings { IssuerName = referenceIssuer.IssuerName, Language = AppSettings.English });
+
+        var wrapping = new OfferPdfData("Client cu denumiri lungi", null,
+            new[]
+            {
+                new OfferLineItem(1, new CatalogItem("Pardoseli", "Parchet stejar", 120m), 2m, 21m),
+                new OfferLineItem(2, new CatalogItem("Pardoseli",
+                    "Parchet din stejar pentru spații comerciale cu trafic intens, finisaj natural mat, " +
+                    "strat de protecție rezistent la uzură și accesorii complete pentru montaj profesional", 120m), 2m, 21m),
+                new OfferLineItem(3, new CatalogItem("Cod de produs fără spații",
+                    string.Concat(Enumerable.Repeat("PARCHETSTEJAR600X90X22", 6)), 150m), 1m, 21m),
+                new OfferLineItem(4, new CatalogItem("Servicii", "Montaj după produsele cu nume lungi", 50m), 3m, 21m)
+            }, referenceIssuer);
+
         return new[]
         {
             new OfferPdfSample("sample-reference", reference, defaults with
@@ -84,7 +117,24 @@ internal static class OfferPdfSamples
             new OfferPdfSample("sample-multipage", multipage, defaults with
                 { Tagline = "SOLUȚII. SIMPLU. EFICIENT." }),
             new OfferPdfSample("sample-stress", stress, defaults with
-                { ValidUntil = new DateOnly(2026, 10, 22) })
-        };
+                { ValidUntil = new DateOnly(2026, 10, 22) }),
+            new OfferPdfSample("sample-variants", variants, defaults),
+            new OfferPdfSample("sample-variants-english", englishVariants, defaults),
+            new OfferPdfSample("sample-wrapped-names", wrapping, defaults)
+        }.Concat(OfferPdfTemplates.All.Select(template => new OfferPdfSample(
+            $"template-{template.Id}",
+            OfferPdfTemplatePreview.Create(new AppSettings
+            {
+                PdfTemplateId = template.Id,
+                Language = AppSettings.English,
+                IssuerName = "EXAMPLE STUDIO",
+                AddressLine1 = "23 Example Street",
+                AddressLine2 = "Bucharest, Romania",
+                Email = "hello@example.com",
+                PhoneNumber = "0721234567",
+                VatNumber = "12345678",
+                VatRate = 21m,
+                DefaultMessage = "Thank you for your interest in our products and services.\n\nPlease find our proposed materials and installation services below."
+            }), defaults))).ToArray();
     }
 }

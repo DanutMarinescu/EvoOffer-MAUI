@@ -1,9 +1,10 @@
 using EvoOffer.Models;
 using QuestPDF.Fluent;
+using Color = QuestPDF.Infrastructure.Color;
 
 namespace EvoOffer.Services;
 
-/// <summary>Renders the reusable offer template without native UI or file-picker dependencies.</summary>
+/// <summary>Renders the selected offer template without native UI or file-picker dependencies.</summary>
 public sealed class OfferPdfService : IOfferPdfService
 {
     private readonly OfferPdfOptions _defaults;
@@ -35,6 +36,13 @@ public sealed class OfferPdfService : IOfferPdfService
 
         var configuration = options ?? _defaults;
         configuration.Validate();
+        configuration = configuration with
+        {
+            TemplateId = OfferPdfTemplates.Normalize(configuration.TemplateId ?? offer.PdfTemplateId),
+            AccentColor = configuration.AccentColor ?? Color.FromHex(offer.PdfPrimaryColor),
+            SecondaryColor = configuration.SecondaryColor ?? Color.FromHex(offer.PdfSecondaryColor),
+            TextColor = configuration.TextColor ?? Color.FromHex(offer.PdfTextColor)
+        };
         if (!IsSupported)
             throw new PlatformNotSupportedException(
                 "QuestPDF does not support iOS, Android or Mac Catalyst. Generate PDFs on Windows or in a desktop/server .NET host.");

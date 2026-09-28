@@ -1,10 +1,11 @@
 using System.Net.Mail;
+using EvoOffer.Services;
 
 namespace EvoOffer.Models;
 
 public static class ContactDataValue
 {
-    public const string EmailValidationMessage = "Enter a valid e-mail address, such as name@example.com.";
+    public static string EmailValidationMessage => LocalizationService.Get("EmailValidation");
 
     public static bool IsValidEmail(string? text)
     {

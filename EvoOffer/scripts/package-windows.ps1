@@ -1,6 +1,9 @@
 param(
     [ValidateSet('x64', 'arm64')]
-    [string]$Architecture = 'x64'
+    [string]$Architecture = 'x64',
+    [string]$OutputDirectory,
+    [ValidatePattern('^\d+\.\d+(\.\d+){0,2}$')]
+    [string]$Version
 )
 
 $ErrorActionPreference = 'Stop'
@@ -16,15 +19,26 @@ $projectDirectory = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\E
 $projectPath = Join-Path $projectDirectory 'EvoOffer.csproj'
 $framework = 'net10.0-windows10.0.19041.0'
 $publishDirectory = Join-Path $projectDirectory "bin\Release\$framework\win-$Architecture\publish"
+if ($OutputDirectory) {
+    $publishDirectory = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($OutputDirectory)
+}
 
-& dotnet publish $projectPath `
-    -f $framework -c Release `
-    "-p:RuntimeIdentifierOverride=win-$Architecture" `
-    '-p:WindowsPackageType=None' `
-    '-p:WindowsAppSDKSelfContained=true' `
-    '-p:SelfContained=true' `
-    -o $publishDirectory
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+$publishArguments = @(
+    'publish', $projectPath,
+    '-f', $framework, '-c', 'Release',
+    "-p:RuntimeIdentifierOverride=win-$Architecture",
+    '-p:WindowsPackageType=None',
+    '-p:WindowsAppSDKSelfContained=true',
+    '-p:SelfContained=true',
+    '-p:PublishSingleFile=false',
+    '-p:PublishTrimmed=false',
+    '-o', $publishDirectory
+)
+if ($Version) {
+    $publishArguments += "-p:ApplicationDisplayVersion=$Version"
+}
+& dotnet @publishArguments
+if ($LASTEXITCODE -ne 0) { throw "Windows publish failed with exit code $LASTEXITCODE." }
 
 Write-Host "Published to $publishDirectory"
 Write-Host 'Copy the entire publish folder to the destination Windows PC and run EvoOffer.exe.'

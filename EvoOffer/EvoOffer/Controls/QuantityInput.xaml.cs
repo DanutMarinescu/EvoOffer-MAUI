@@ -30,8 +30,8 @@ public partial class QuantityInput : ContentView
         var input = (QuantityInput)bindable;
         input.InputBorder.Stroke = new SolidColorBrush((bool)newValue
             ? Color.FromArgb("DC3545") : Color.FromArgb("CCD6E2"));
-        SemanticProperties.SetHint(input.QuantityEntry, (bool)newValue
-            ? "Enter a quantity between 1 and 999999" : "Enter the item quantity");
+        input.QuantityEntry.SetDynamicResource(SemanticProperties.HintProperty, (bool)newValue
+            ? "Controls_QuantityInvalidHint" : "Controls_QuantityHint");
     }
 
     private void OnIncreaseClicked(object? sender, EventArgs e) => Adjust(1);

@@ -11,7 +11,7 @@ public partial class MainPage : ContentPage
 {
     private const string DefaultMessagePreference = "offer_default_message";
     private const string VatRatePreference = "offer_vat_percentage";
-    private const double MinimumTableWidth = 1160;
+    private const double MinimumTableWidth = 1620;
     private readonly MainViewModel _viewModel;
     private readonly IOfferPdfService _pdfService;
     private readonly SettingsStore _settingsStore = new(FileSystem.Current.AppDataDirectory);
@@ -19,19 +19,19 @@ public partial class MainPage : ContentPage
     private bool? _usingSidebar;
     private bool? _usingCompactComposer;
     private bool _openingDialog;
+    private bool _catalogLoaded;
 
     public MainPage(IOfferPdfService pdfService)
     {
         ArgumentNullException.ThrowIfNull(pdfService);
         _pdfService = pdfService;
-        InitializeComponent();
         var savedVatRate = Preferences.Default.Get(VatRatePreference, VatRateValue.Format(VatRateValue.Default));
         var initialSettings = new AppSettings
         {
             VatRate = VatRateValue.TryParse(savedVatRate, out var vatRate) ? vatRate : VatRateValue.Default,
             DefaultMessage = Preferences.Default.Get(DefaultMessagePreference, MainViewModel.DefaultCustomText)
         };
-        string? loadError = null;
+        var settingsLoadFailed = false;
         try
         {
             _settings = _settingsStore.Load(initialSettings);
@@ -39,18 +39,56 @@ public partial class MainPage : ContentPage
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {
             _settings = initialSettings;
-            loadError = "Could not read or create settings.json. Using default settings; open Settings to save again.";
+            _settings.Normalize();
+            settingsLoadFailed = true;
         }
+        LocalizationService.SetLanguage(_settings.Language);
+        InitializeComponent();
         SettingsPathPicker.RestoreSavedAccess();
         _viewModel = new MainViewModel(_settings.VatRate);
         _viewModel.DefaultMessage = _settings.DefaultMessage;
         _viewModel.CustomText = _viewModel.DefaultMessage;
-        if (loadError is not null)
-            _viewModel.Status = loadError;
+        if (settingsLoadFailed)
+            _viewModel.SetStatus("SettingsLoadFailed");
         BindingContext = _viewModel;
         SizeChanged += OnPageSizeChanged;
         FormArea.SizeChanged += OnFormAreaSizeChanged;
         _viewModel.Items.CollectionChanged += OnItemsChanged;
+    }
+
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+        if (_catalogLoaded)
+            return;
+        _catalogLoaded = true;
+        if (string.IsNullOrWhiteSpace(_settings.DataFilePath))
+            return;
+
+        SettingsButton.IsEnabled = false;
+        var previousStatus = _viewModel.Status;
+        _viewModel.SetStatus("StatusLoadingCatalog");
+        try
+        {
+            var catalog = await Task.Run(() => CatalogCsvImporter.ImportFile(_settings.DataFilePath, _settings.VatRate));
+            _viewModel.ApplyCatalog(catalog);
+            if (previousStatus == LocalizationService.Get("StatusReady"))
+                _viewModel.SetStatus("StatusCatalogLoaded", catalog.Items.Count);
+            else
+                _viewModel.Status = previousStatus;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Saved catalog could not be loaded: {ex}");
+            _viewModel.SetStatus("StatusSavedCatalogUnavailable");
+            await DisplayAlertAsync(LocalizationService.Get("CatalogUnavailable"), ex is CatalogImportException
+                ? ex.Message
+                : LocalizationService.Get("SavedCatalogReadFailed"), LocalizationService.Get("Ok"));
+        }
+        finally
+        {
+            SettingsButton.IsEnabled = true;
+        }
     }
 
     private void OnPageSizeChanged(object? sender, EventArgs e)
@@ -225,14 +263,14 @@ public partial class MainPage : ContentPage
         {
             if (!_viewModel.TryValidateOffer(out var message))
             {
-                await DisplayAlertAsync("Check your offer", message, "OK");
+                await DisplayAlertAsync(LocalizationService.Get("CheckOffer"), message, LocalizationService.Get("Ok"));
                 return;
             }
 
             if (!_pdfService.IsSupported)
             {
-                await DisplayAlertAsync("PDF preview unavailable",
-                    "PDF preview is currently available in the Windows app. It is not yet available on this platform.", "OK");
+                await DisplayAlertAsync(LocalizationService.Get("PdfPreviewUnavailable"),
+                    LocalizationService.Get("PdfPreviewPlatformUnavailable"), LocalizationService.Get("Ok"));
                 return;
             }
 
@@ -244,8 +282,8 @@ public partial class MainPage : ContentPage
             // WinUI reports a missing runtime as HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND).
             catch (Exception ex) when (ex.HResult == unchecked((int)0x80070002))
             {
-                await DisplayAlertAsync("PDF viewer required",
-                    "Install the Microsoft Edge WebView2 Runtime, then generate your offer again to preview the PDF.", "OK");
+                await DisplayAlertAsync(LocalizationService.Get("PdfViewerRequired"),
+                    LocalizationService.Get("PdfViewerInstallHelp"), LocalizationService.Get("Ok"));
                 return;
             }
 #endif
@@ -253,30 +291,31 @@ public partial class MainPage : ContentPage
             // Snapshot on the UI thread so later edits cannot change the PDF being generated.
             var offer = new OfferPdfData(_viewModel.ClientName, _viewModel.CustomText, _viewModel.Items, _settings);
             GenerateButton.IsEnabled = false;
-            GenerateButton.Text = "Generating…";
-            _viewModel.Status = "Generating offer PDF…";
+            GenerateButton.Text = LocalizationService.Get("Generating");
+            _viewModel.SetStatus("StatusGeneratingPdf");
             previewFile = await OfferPdfPreviewFile.CreateAsync(_pdfService, offer, FileSystem.Current.CacheDirectory);
             savedPdfPath = await previewFile.SaveCopyAsync(_settings.SaveDirectory);
             await Navigation.PushModalAsync(new OfferPreviewPage(previewFile));
             previewFile = null; // The preview page now owns the temporary PDF.
-            _viewModel.Status = $"Offer PDF saved to {savedPdfPath}";
+            _viewModel.SetStatus("StatusPdfSaved", savedPdfPath);
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Offer PDF preview failed: {ex}");
-            _viewModel.Status = savedPdfPath is null
-                ? "Could not generate or save the offer PDF. Check the logo and save directory in Settings."
-                : $"Offer PDF saved to {savedPdfPath}";
-            await DisplayAlertAsync(savedPdfPath is null ? "Could not save PDF" : "Could not open PDF preview",
+            if (savedPdfPath is null)
+                _viewModel.SetStatus("StatusPdfSaveFailed");
+            else
+                _viewModel.SetStatus("StatusPdfSaved", savedPdfPath);
+            await DisplayAlertAsync(savedPdfPath is null ? LocalizationService.Get("PdfSaveFailed") : LocalizationService.Get("PdfPreviewOpenFailed"),
                 savedPdfPath is null
-                    ? "The offer PDF could not be generated or saved. Check that the logo image is available and the save directory is writable. Your offer is still available to edit."
-                    : $"Your PDF was saved to {savedPdfPath}, but the preview could not be opened.", "OK");
+                    ? LocalizationService.Get("PdfSaveFailedHelp")
+                    : LocalizationService.Format("PdfSavedPreviewFailedHelp", savedPdfPath), LocalizationService.Get("Ok"));
         }
         finally
         {
             previewFile?.Dispose();
             GenerateButton.IsEnabled = true;
-            GenerateButton.Text = "Generate Offer";
+            GenerateButton.SetDynamicResource(Button.TextProperty, "GenerateOffer");
             _openingDialog = false;
         }
     }
@@ -288,10 +327,10 @@ public partial class MainPage : ContentPage
         _openingDialog = true;
         try
         {
-            var issuerEntry = CreateSettingsEntry(_settings.IssuerName, "Issuer name", "IssuerName");
-            var emailEntry = CreateSettingsEntry(_settings.Email, "name@example.com", "Email");
+            var issuerEntry = CreateSettingsEntry(_settings.IssuerName, LocalizationService.Get("IssuerName"), "IssuerName");
+            var emailEntry = CreateSettingsEntry(_settings.Email, LocalizationService.Get("EmailPlaceholder"), "Email");
             emailEntry.Keyboard = Keyboard.Email;
-            SemanticProperties.SetDescription(emailEntry, "E-mail");
+            SemanticProperties.SetDescription(emailEntry, LocalizationService.Get("Email"));
             var emailBorder = CreateSettingsInputBorder(emailEntry);
             var emailError = new Label
             {
@@ -305,7 +344,7 @@ public partial class MainPage : ContentPage
                 var isValid = ContactDataValue.IsValidEmail(emailEntry.Text);
                 emailError.IsVisible = !isValid;
                 emailBorder.Stroke = Color.FromArgb(isValid ? "B8C8DC" : "B42318");
-                SemanticProperties.SetHint(emailEntry, isValid ? "E-mail address" : ContactDataValue.EmailValidationMessage);
+                SemanticProperties.SetHint(emailEntry, isValid ? LocalizationService.Get("EmailAddress") : ContactDataValue.EmailValidationMessage);
                 return isValid;
             }
             emailEntry.Unfocused += (_, _) => ValidateEmail();
@@ -314,33 +353,33 @@ public partial class MainPage : ContentPage
                 if (emailError.IsVisible)
                     ValidateEmail();
             };
-            var phoneEntry = CreateSettingsEntry(_settings.PhoneNumber, "Phone number", "PhoneNumber");
+            var phoneEntry = CreateSettingsEntry(_settings.PhoneNumber, LocalizationService.Get("PhoneNumber"), "PhoneNumber");
             phoneEntry.Keyboard = Keyboard.Numeric;
             phoneEntry.TextChanged += OnDigitsOnlyTextChanged;
-            var addressLine1Entry = CreateSettingsEntry(_settings.AddressLine1, "Street and number", "AddressLine1");
-            SemanticProperties.SetDescription(addressLine1Entry, "Address line 1");
-            var addressLine2Entry = CreateSettingsEntry(_settings.AddressLine2, "City, postal code, country", "AddressLine2");
-            SemanticProperties.SetDescription(addressLine2Entry, "Address line 2");
-            var vatNumberEntry = CreateSettingsEntry(_settings.VatNumber, "VAT number", "VatNumber");
+            var addressLine1Entry = CreateSettingsEntry(_settings.AddressLine1, LocalizationService.Get("StreetAndNumber"), "AddressLine1");
+            SemanticProperties.SetDescription(addressLine1Entry, LocalizationService.Get("AddressLine1"));
+            var addressLine2Entry = CreateSettingsEntry(_settings.AddressLine2, LocalizationService.Get("CityPostalCodeCountry"), "AddressLine2");
+            SemanticProperties.SetDescription(addressLine2Entry, LocalizationService.Get("AddressLine2"));
+            var vatNumberEntry = CreateSettingsEntry(_settings.VatNumber, LocalizationService.Get("VatNumber"), "VatNumber");
             vatNumberEntry.Keyboard = Keyboard.Numeric;
             vatNumberEntry.TextChanged += OnDigitsOnlyTextChanged;
             var languagePicker = new DropdownPicker
             {
-                Title = "Language",
+                Title = LocalizationService.Get("Language"),
                 ItemsSource = new[] { AppSettings.Romanian, AppSettings.English },
                 SelectedItem = _settings.Language,
                 BackgroundColor = Colors.White,
                 HeightRequest = 44,
                 AutomationId = "Language"
             };
-            SemanticProperties.SetDescription(languagePicker, "Language");
+            SemanticProperties.SetDescription(languagePicker, LocalizationService.Get("Language"));
             var editor = new Editor
             {
                 Text = _viewModel.DefaultMessage,
                 HeightRequest = 180,
                 BackgroundColor = Colors.Transparent
             };
-            SemanticProperties.SetDescription(editor, "Default offer message");
+            SemanticProperties.SetDescription(editor, LocalizationService.Get("DefaultOfferMessageLabel"));
             var vatEntry = new Entry
             {
                 Text = VatRateValue.Format(_viewModel.VatRate),
@@ -349,7 +388,7 @@ public partial class MainPage : ContentPage
                 MinimumHeightRequest = 44,
                 AutomationId = "VatPercentage"
             };
-            SemanticProperties.SetDescription(vatEntry, "VAT percentage");
+            SemanticProperties.SetDescription(vatEntry, LocalizationService.Get("VatPercentage"));
             var vatError = new Label
             {
                 Text = VatRateValue.ValidationMessage,
@@ -357,27 +396,35 @@ public partial class MainPage : ContentPage
                 IsVisible = false
             };
             vatEntry.TextChanged += (_, _) => vatError.IsVisible = false;
-            var save = new Button { Text = "Save settings", BackgroundColor = Color.FromArgb("147EF0"), TextColor = Colors.White };
-            var cancel = new Button { Text = "Cancel" };
-            var page = new ContentPage { Title = "Settings" };
+            var save = new Button { Text = LocalizationService.Get("SaveSettings"), BackgroundColor = Color.FromArgb("147EF0"), TextColor = Colors.White };
+            var cancel = new Button { Text = LocalizationService.Get("Cancel") };
+            var page = new ContentPage { Title = LocalizationService.Get("Settings") };
             var selectingPath = false;
+            var savingSettings = false;
+            var previewingTemplate = false;
+            var dataFileSelected = false;
             page.Disappearing += (_, _) =>
             {
-                if (!selectingPath)
+                if (!selectingPath && !savingSettings && !previewingTemplate)
                     SettingsPathPicker.DiscardUnsavedAccess();
             };
-            var logoPathEntry = CreateSettingsEntry(_settings.LogoPath ?? string.Empty, "No logo selected", "LogoPath");
+            var logoPathEntry = CreateSettingsEntry(_settings.LogoPath ?? string.Empty, LocalizationService.Get("NoLogoSelected"), "LogoPath");
             logoPathEntry.IsReadOnly = true;
-            SemanticProperties.SetDescription(logoPathEntry, "Logo image path");
-            var saveDirectoryEntry = CreateSettingsEntry(_settings.SaveDirectory, "Save directory", "SaveDirectory");
+            SemanticProperties.SetDescription(logoPathEntry, LocalizationService.Get("LogoImagePath"));
+            var saveDirectoryEntry = CreateSettingsEntry(_settings.SaveDirectory, LocalizationService.Get("SaveDirectory"), "SaveDirectory");
             saveDirectoryEntry.IsReadOnly = true;
-            var browseLogo = new Button { Text = "Browse…", ImageSource = "folder.png", AutomationId = "BrowseLogo", Padding = new Thickness(12, 8) };
-            var browseDirectory = new Button { Text = "Browse…", ImageSource = "folder.png", AutomationId = "BrowseSaveDirectory", Padding = new Thickness(12, 8) };
-            SemanticProperties.SetDescription(browseLogo, "Browse for a logo image");
-            SemanticProperties.SetDescription(browseDirectory, "Browse for a PDF save folder");
+            var dataFilePathEntry = CreateSettingsEntry(_settings.DataFilePath ?? string.Empty, LocalizationService.Get("NoCsvSelected"), "DataFilePath");
+            dataFilePathEntry.IsReadOnly = true;
+            SemanticProperties.SetDescription(dataFilePathEntry, LocalizationService.Get("DataFilePath"));
+            var browseLogo = new Button { Text = LocalizationService.Get("Browse"), ImageSource = "folder.png", AutomationId = "BrowseLogo", Padding = new Thickness(12, 8) };
+            var browseDirectory = new Button { Text = LocalizationService.Get("Browse"), ImageSource = "folder.png", AutomationId = "BrowseSaveDirectory", Padding = new Thickness(12, 8) };
+            var browseDataFile = new Button { Text = LocalizationService.Get("Browse"), ImageSource = "folder.png", AutomationId = "BrowseDataFile", Padding = new Thickness(12, 8) };
+            SemanticProperties.SetDescription(browseLogo, LocalizationService.Get("BrowseLogo"));
+            SemanticProperties.SetDescription(browseDirectory, LocalizationService.Get("BrowseSaveDirectory"));
+            SemanticProperties.SetDescription(browseDataFile, LocalizationService.Get("BrowseDataFile"));
             var removeLogo = new Button
             {
-                Text = "Remove logo", AutomationId = "RemoveLogo", HorizontalOptions = LayoutOptions.Start,
+                Text = LocalizationService.Get("RemoveLogo"), AutomationId = "RemoveLogo", HorizontalOptions = LayoutOptions.Start,
                 IsEnabled = !string.IsNullOrWhiteSpace(logoPathEntry.Text)
             };
             removeLogo.Clicked += (_, _) =>
@@ -385,31 +432,149 @@ public partial class MainPage : ContentPage
                 logoPathEntry.Text = string.Empty;
                 removeLogo.IsEnabled = false;
             };
+            var clearDataFile = new Button
+            {
+                Text = LocalizationService.Get("ClearSelection"), AutomationId = "ClearDataFile", HorizontalOptions = LayoutOptions.Start,
+                IsEnabled = !string.IsNullOrWhiteSpace(dataFilePathEntry.Text)
+            };
+            clearDataFile.Clicked += (_, _) =>
+            {
+                dataFilePathEntry.Text = string.Empty;
+                clearDataFile.IsEnabled = false;
+                dataFileSelected = true;
+            };
             async Task BrowsePathAsync(Func<Task<string?>> pick, Entry entry)
             {
                 selectingPath = true;
-                save.IsEnabled = cancel.IsEnabled = browseLogo.IsEnabled = browseDirectory.IsEnabled = removeLogo.IsEnabled = false;
+                save.IsEnabled = cancel.IsEnabled = browseLogo.IsEnabled = browseDirectory.IsEnabled =
+                    browseDataFile.IsEnabled = removeLogo.IsEnabled = clearDataFile.IsEnabled = false;
                 try
                 {
                     var path = await pick();
                     if (path is not null)
+                    {
                         entry.Text = path;
+                        if (entry == dataFilePathEntry)
+                            dataFileSelected = true;
+                    }
                 }
                 catch (OperationCanceledException) { }
+                catch (IOException) when (entry == dataFilePathEntry)
+                {
+                    await page.DisplayAlertAsync(LocalizationService.Get("DataFileSelectionFailed"), LocalizationService.Get("ChooseCsvFile"), LocalizationService.Get("Ok"));
+                }
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine($"Settings path picker failed: {ex}");
-                    await page.DisplayAlertAsync("Could not select path", "The file browser could not complete your selection. Please try again.", "OK");
+                    await page.DisplayAlertAsync(LocalizationService.Get("PathSelectionFailed"), LocalizationService.Get("PathSelectionFailedHelp"), LocalizationService.Get("Ok"));
                 }
                 finally
                 {
                     selectingPath = false;
-                    save.IsEnabled = cancel.IsEnabled = browseLogo.IsEnabled = browseDirectory.IsEnabled = true;
+                    save.IsEnabled = cancel.IsEnabled = browseLogo.IsEnabled = browseDirectory.IsEnabled = browseDataFile.IsEnabled = true;
                     removeLogo.IsEnabled = !string.IsNullOrWhiteSpace(logoPathEntry.Text);
+                    clearDataFile.IsEnabled = !string.IsNullOrWhiteSpace(dataFilePathEntry.Text);
                 }
             }
             browseLogo.Clicked += async (_, _) => await BrowsePathAsync(SettingsPathPicker.PickLogoAsync, logoPathEntry);
             browseDirectory.Clicked += async (_, _) => await BrowsePathAsync(SettingsPathPicker.PickSaveDirectoryAsync, saveDirectoryEntry);
+            browseDataFile.Clicked += async (_, _) => await BrowsePathAsync(SettingsPathPicker.PickDataFileAsync, dataFilePathEntry);
+            var primaryColorPicker = new SettingsColorPicker(LocalizationService.Get("PrimaryColor"), _settings.PdfPrimaryColor, "PdfPrimaryColor");
+            var secondaryColorPicker = new SettingsColorPicker(LocalizationService.Get("SecondaryColor"), _settings.PdfSecondaryColor, "PdfSecondaryColor");
+            var textColorPicker = new SettingsColorPicker(LocalizationService.Get("TextColor"), _settings.PdfTextColor, "PdfTextColor");
+            var colorPickers = new[] { primaryColorPicker, secondaryColorPicker, textColorPicker };
+            var templateColors = new VerticalStackLayout
+            {
+                Spacing = 12,
+                Children =
+                {
+                    new Label { Text = LocalizationService.Get("TemplateColors"), FontSize = 18, FontAttributes = FontAttributes.Bold },
+                    new Label
+                    {
+                        Text = LocalizationService.Get("TemplateColorsHelp"),
+                        TextColor = Color.FromArgb("50627C")
+                    },
+                    primaryColorPicker, secondaryColorPicker, textColorPicker
+                }
+            };
+            var templateSelector = new PdfTemplateSelector(_settings.PdfTemplateId, _pdfService.IsSupported, templateColors);
+            async Task<bool> ValidateTemplateColorsAsync()
+            {
+                SettingsColorPicker? firstInvalid = null;
+                foreach (var picker in colorPickers)
+                    if (!picker.Validate())
+                        firstInvalid ??= picker;
+                if (firstInvalid is null)
+                    return true;
+                await ((ScrollView)page.Content).ScrollToAsync(firstInvalid, ScrollToPosition.Center, true);
+                firstInvalid.FocusHexEntry();
+                return false;
+            }
+            AppSettings ReadDraftSettings(decimal vatRate) => new()
+            {
+                IssuerName = issuerEntry.Text ?? string.Empty,
+                LogoPath = logoPathEntry.Text,
+                SaveDirectory = saveDirectoryEntry.Text ?? AppSettings.DefaultSaveDirectory,
+                DataFilePath = dataFilePathEntry.Text,
+                Email = emailEntry.Text?.Trim() ?? string.Empty,
+                PhoneNumber = ContactDataValue.DigitsOnly(phoneEntry.Text),
+                AddressLine1 = addressLine1Entry.Text ?? string.Empty,
+                AddressLine2 = addressLine2Entry.Text ?? string.Empty,
+                VatNumber = ContactDataValue.DigitsOnly(vatNumberEntry.Text),
+                Language = languagePicker.SelectedItem as string ?? AppSettings.Romanian,
+                PdfTemplateId = templateSelector.SelectedTemplateId,
+                PdfPrimaryColor = primaryColorPicker.SelectedColorHex,
+                PdfSecondaryColor = secondaryColorPicker.SelectedColorHex,
+                PdfTextColor = textColorPicker.SelectedColorHex,
+                VatRate = vatRate,
+                DefaultMessage = editor.Text ?? string.Empty
+            };
+            templateSelector.PreviewRequested += async (_, _) =>
+            {
+                if (selectingPath || savingSettings || previewingTemplate)
+                    return;
+                if (!await ValidateTemplateColorsAsync())
+                    return;
+                if (!VatRateValue.TryParse(vatEntry.Text, out var previewVatRate))
+                {
+                    vatError.IsVisible = true;
+                    await page.DisplayAlertAsync(LocalizationService.Get("CheckVatPercentage"), VatRateValue.ValidationMessage, LocalizationService.Get("Ok"));
+                    vatEntry.Focus();
+                    return;
+                }
+
+                OfferPdfPreviewFile? previewFile = null;
+                var previewOpened = false;
+                previewingTemplate = true;
+                templateSelector.SetPreviewBusy(true);
+                page.Content.IsEnabled = false;
+                try
+                {
+                    var previewSettings = ReadDraftSettings(previewVatRate);
+                    previewSettings.Normalize();
+                    var sample = OfferPdfTemplatePreview.Create(previewSettings);
+                    previewFile = await OfferPdfPreviewFile.CreateAsync(_pdfService, sample, FileSystem.Current.CacheDirectory);
+                    var previewPage = new OfferPreviewPage(previewFile, isTemplatePreview: true);
+                    previewPage.Disappearing += (_, _) => previewingTemplate = false;
+                    await page.Navigation.PushModalAsync(previewPage);
+                    previewOpened = true;
+                    previewFile = null; // The preview page owns this temporary sample; no permanent copy is saved.
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Template preview failed: {ex}");
+                    await page.DisplayAlertAsync(LocalizationService.Get("TemplatePreviewFailed"),
+                        LocalizationService.Get("TemplatePreviewFailedHelp"), LocalizationService.Get("Ok"));
+                }
+                finally
+                {
+                    previewFile?.Dispose();
+                    if (!previewOpened)
+                        previewingTemplate = false;
+                    templateSelector.SetPreviewBusy(false);
+                    page.Content.IsEnabled = true;
+                }
+            };
             var buttons = new HorizontalStackLayout { Spacing = 12, Children = { save, cancel } };
             page.Content = new ScrollView
             {
@@ -418,42 +583,52 @@ public partial class MainPage : ContentPage
                     Padding = 32, Spacing = 12, MaximumWidthRequest = 760, HorizontalOptions = LayoutOptions.Fill,
                     Children =
                     {
-                        new Label { Text = "Settings", FontSize = 28, FontAttributes = FontAttributes.Bold },
-                        new Label { Text = "Issuer name", FontSize = 18, FontAttributes = FontAttributes.Bold },
+                        new Label { Text = LocalizationService.Get("Settings"), FontSize = 28, FontAttributes = FontAttributes.Bold },
+                        templateSelector,
+                        new BoxView { HeightRequest = 1, Color = Color.FromArgb("D2DCE8"), HorizontalOptions = LayoutOptions.Fill },
+                        new Label { Text = LocalizationService.Get("IssuerName"), FontSize = 18, FontAttributes = FontAttributes.Bold },
                         CreateSettingsInputBorder(issuerEntry),
                         new BoxView { HeightRequest = 1, Color = Color.FromArgb("D2DCE8"), HorizontalOptions = LayoutOptions.Fill },
-                        new Label { Text = "Logo", FontSize = 18, FontAttributes = FontAttributes.Bold },
-                        new Label { Text = "Optional image displayed on generated offers.", TextColor = Color.FromArgb("50627C") },
+                        new Label { Text = LocalizationService.Get("Logo"), FontSize = 18, FontAttributes = FontAttributes.Bold },
+                        new Label { Text = LocalizationService.Get("LogoHelp"), TextColor = Color.FromArgb("50627C") },
                         CreateSettingsPathRow(logoPathEntry, browseLogo),
                         removeLogo,
                         new BoxView { HeightRequest = 1, Color = Color.FromArgb("D2DCE8"), HorizontalOptions = LayoutOptions.Fill },
-                        new Label { Text = "Save directory", FontSize = 18, FontAttributes = FontAttributes.Bold },
-                        new Label { Text = "Generated PDFs are saved in this folder. The folder is created when needed.", TextColor = Color.FromArgb("50627C") },
+                        new Label { Text = LocalizationService.Get("SaveDirectory"), FontSize = 18, FontAttributes = FontAttributes.Bold },
+                        new Label { Text = LocalizationService.Get("SaveDirectoryHelp"), TextColor = Color.FromArgb("50627C") },
                         CreateSettingsPathRow(saveDirectoryEntry, browseDirectory),
                         new BoxView { HeightRequest = 1, Color = Color.FromArgb("D2DCE8"), HorizontalOptions = LayoutOptions.Fill },
-                        new Label { Text = "Contact data", FontSize = 18, FontAttributes = FontAttributes.Bold },
-                        new Label { Text = "E-mail", FontAttributes = FontAttributes.Bold },
+                        new Label { Text = LocalizationService.Get("DataFile"), FontSize = 18, FontAttributes = FontAttributes.Bold },
+                        new Label { Text = LocalizationService.Get("DataFileRequiredHeadersHelp"), TextColor = Color.FromArgb("50627C") },
+                        new Label { Text = LocalizationService.Get("DataFileVariantHeadersHelp"), TextColor = Color.FromArgb("50627C") },
+                        new Label { Text = LocalizationService.Get("DataFileDimensionsHelp"), TextColor = Color.FromArgb("50627C") },
+                        new Label { Text = LocalizationService.Get("DataFileCategoriesHelp"), TextColor = Color.FromArgb("50627C") },
+                        CreateSettingsPathRow(dataFilePathEntry, browseDataFile),
+                        clearDataFile,
+                        new BoxView { HeightRequest = 1, Color = Color.FromArgb("D2DCE8"), HorizontalOptions = LayoutOptions.Fill },
+                        new Label { Text = LocalizationService.Get("ContactData"), FontSize = 18, FontAttributes = FontAttributes.Bold },
+                        new Label { Text = LocalizationService.Get("Email"), FontAttributes = FontAttributes.Bold },
                         emailBorder,
                         emailError,
-                        new Label { Text = "Phone number", FontAttributes = FontAttributes.Bold },
+                        new Label { Text = LocalizationService.Get("PhoneNumber"), FontAttributes = FontAttributes.Bold },
                         CreateSettingsInputBorder(phoneEntry),
-                        new Label { Text = "Address line 1", FontAttributes = FontAttributes.Bold },
+                        new Label { Text = LocalizationService.Get("AddressLine1"), FontAttributes = FontAttributes.Bold },
                         CreateSettingsInputBorder(addressLine1Entry),
-                        new Label { Text = "Address line 2", FontAttributes = FontAttributes.Bold },
+                        new Label { Text = LocalizationService.Get("AddressLine2"), FontAttributes = FontAttributes.Bold },
                         CreateSettingsInputBorder(addressLine2Entry),
-                        new Label { Text = "VAT number", FontAttributes = FontAttributes.Bold },
+                        new Label { Text = LocalizationService.Get("VatNumber"), FontAttributes = FontAttributes.Bold },
                         CreateSettingsInputBorder(vatNumberEntry),
                         new BoxView { HeightRequest = 1, Color = Color.FromArgb("D2DCE8"), HorizontalOptions = LayoutOptions.Fill },
-                        new Label { Text = "Language", FontSize = 18, FontAttributes = FontAttributes.Bold },
+                        new Label { Text = LocalizationService.Get("Language"), FontSize = 18, FontAttributes = FontAttributes.Bold },
                         CreateSettingsInputBorder(languagePicker),
-                        new Label { Text = "Used for PDF labels, dates and number formatting. Your offer message is kept as entered.", TextColor = Color.FromArgb("50627C") },
+                        new Label { Text = LocalizationService.Get("LanguageHelp"), TextColor = Color.FromArgb("50627C") },
                         new BoxView { HeightRequest = 1, Color = Color.FromArgb("D2DCE8"), HorizontalOptions = LayoutOptions.Fill },
-                        new Label { Text = "Default offer message", FontSize = 18, FontAttributes = FontAttributes.Bold },
-                        new Label { Text = "Use this message for the current offer and whenever you reset the form.", TextColor = Color.FromArgb("50627C") },
+                        new Label { Text = LocalizationService.Get("DefaultOfferMessageLabel"), FontSize = 18, FontAttributes = FontAttributes.Bold },
+                        new Label { Text = LocalizationService.Get("DefaultOfferMessageHelp"), TextColor = Color.FromArgb("50627C") },
                         CreateSettingsInputBorder(editor),
                         new BoxView { HeightRequest = 1, Color = Color.FromArgb("D2DCE8"), HorizontalOptions = LayoutOptions.Fill },
-                        new Label { Text = "VAT percentage (%)", FontSize = 18, FontAttributes = FontAttributes.Bold },
-                        new Label { Text = "Applied to all items in the current offer and future offers. Unit prices exclude VAT; totals include VAT. Use 0 for no VAT.", TextColor = Color.FromArgb("50627C") },
+                        new Label { Text = LocalizationService.Get("VatPercentageLabel"), FontSize = 18, FontAttributes = FontAttributes.Bold },
+                        new Label { Text = LocalizationService.Get("VatPercentageHelp"), TextColor = Color.FromArgb("50627C") },
                         CreateSettingsInputBorder(vatEntry),
                         vatError, buttons
                     }
@@ -461,6 +636,10 @@ public partial class MainPage : ContentPage
             };
             save.Clicked += async (_, _) =>
             {
+                if (savingSettings || selectingPath)
+                    return;
+                if (!await ValidateTemplateColorsAsync())
+                    return;
                 if (!ValidateEmail())
                 {
                     await ((ScrollView)page.Content).ScrollToAsync(0, 0, true);
@@ -475,48 +654,84 @@ public partial class MainPage : ContentPage
                     return;
                 }
 
-                var settings = new AppSettings
-                {
-                    IssuerName = issuerEntry.Text ?? string.Empty,
-                    LogoPath = logoPathEntry.Text,
-                    SaveDirectory = saveDirectoryEntry.Text ?? AppSettings.DefaultSaveDirectory,
-                    Email = emailEntry.Text?.Trim() ?? string.Empty,
-                    PhoneNumber = ContactDataValue.DigitsOnly(phoneEntry.Text),
-                    AddressLine1 = addressLine1Entry.Text ?? string.Empty,
-                    AddressLine2 = addressLine2Entry.Text ?? string.Empty,
-                    VatNumber = ContactDataValue.DigitsOnly(vatNumberEntry.Text),
-                    Language = languagePicker.SelectedItem as string ?? AppSettings.Romanian,
-                    VatRate = vatRate,
-                    DefaultMessage = editor.Text ?? string.Empty
-                };
+                var defaultMessageEdited = editor.Text != _viewModel.DefaultMessage;
+                var settings = ReadDraftSettings(vatRate);
+                settings.Normalize();
+                savingSettings = true;
+                page.Content.IsEnabled = false;
                 try
                 {
-                    _settingsStore.Save(settings);
-                }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-                {
-                    await page.DisplayAlertAsync("Settings not saved", "Could not write settings.json. Check available storage and try again.", "OK");
-                    return;
-                }
+                    ProductCatalog? importedCatalog = null;
+                    var importRequested = settings.DataFilePath is not null && (dataFileSelected
+                        || settings.DataFilePath != _settings.DataFilePath || _viewModel.Catalog.Items.Count == 0);
+                    if (importRequested)
+                    {
+                        save.Text = LocalizationService.Get("Importing");
+                        try
+                        {
+                            importedCatalog = await Task.Run(() => CatalogCsvImporter.ImportFile(settings.DataFilePath!, vatRate));
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"CSV import failed: {ex}");
+                            await page.DisplayAlertAsync(LocalizationService.Get("CsvImportFailed"), (ex is CatalogImportException
+                                ? ex.Message
+                                : LocalizationService.Get("CsvReadFailedHelp"))
+                                + LocalizationService.Get("PreviousSettingsUnchanged"), LocalizationService.Get("Ok"));
+                            return;
+                        }
+                    }
 
-                _settings = settings;
-                _viewModel.VatRate = vatRate;
-                _viewModel.DefaultMessage = settings.DefaultMessage;
-                _viewModel.CustomText = _viewModel.DefaultMessage;
-                try
-                {
-                    SettingsPathPicker.CommitSavedAccess(settings.LogoPath, settings.SaveDirectory);
+                    try
+                    {
+                        _settingsStore.Save(settings);
+                    }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                    {
+                        await page.DisplayAlertAsync(LocalizationService.Get("SettingsNotSaved"), LocalizationService.Get("SettingsSaveFailedHelp"), LocalizationService.Get("Ok"));
+                        return;
+                    }
+
+                    _settings = settings;
+                    LocalizationService.SetLanguage(settings.Language);
+                    _viewModel.RefreshLocalization();
+                    _viewModel.VatRate = vatRate;
+                    if (settings.DataFilePath is null)
+                        _viewModel.ApplyCatalog(ProductCatalog.Empty);
+                    else if (importedCatalog is not null)
+                        _viewModel.ApplyCatalog(importedCatalog);
+                    _viewModel.DefaultMessage = settings.DefaultMessage;
+                    if (defaultMessageEdited || MainViewModel.IsDefaultMessage(_viewModel.CustomText))
+                        _viewModel.CustomText = _viewModel.DefaultMessage;
+                    dataFileSelected = false;
+                    try
+                    {
+                        SettingsPathPicker.CommitSavedAccess(settings.LogoPath, settings.SaveDirectory, settings.DataFilePath);
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Could not persist selected file access: {ex}");
+                        _viewModel.SetStatus("StatusFileAccessNotSaved");
+                        await page.DisplayAlertAsync(LocalizationService.Get("FileAccessNotSaved"),
+                            LocalizationService.Get("FileAccessNotSavedHelp"), LocalizationService.Get("Ok"));
+                        await Navigation.PopModalAsync();
+                        return;
+                    }
+                    if (importedCatalog is null)
+                        _viewModel.SetStatus("StatusSettingsSaved");
+                    else
+                        _viewModel.SetStatus("StatusCatalogImported", importedCatalog.Items.Count);
+                    if (importedCatalog is not null)
+                        await page.DisplayAlertAsync(LocalizationService.Get("ImportComplete"),
+                            LocalizationService.Format("CatalogImportedHelp", importedCatalog.Items.Count), LocalizationService.Get("Ok"));
+                    await Navigation.PopModalAsync();
                 }
-                catch (Exception ex)
+                finally
                 {
-                    System.Diagnostics.Debug.WriteLine($"Could not persist selected file access: {ex}");
-                    _viewModel.Status = "Settings saved, but access to the selected paths could not be remembered.";
-                    await page.DisplayAlertAsync("Could not remember file access",
-                        "Your settings were saved, but access to the selected image or folder could not be remembered. Try saving again, or reselect the paths with Browse.", "OK");
-                    return;
+                    savingSettings = false;
+                    page.Content.IsEnabled = true;
+                    save.Text = LocalizationService.Get("SaveSettings");
                 }
-                _viewModel.Status = "Settings saved.";
-                await Navigation.PopModalAsync();
             };
             cancel.Clicked += async (_, _) => await Navigation.PopModalAsync();
             await Navigation.PushModalAsync(page);

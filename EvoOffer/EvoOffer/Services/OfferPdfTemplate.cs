@@ -2,22 +2,52 @@ using System.Globalization;
 using EvoOffer.Models;
 using QuestPDF.Fluent;
 using QuestPDF.Infrastructure;
+using Color = QuestPDF.Infrastructure.Color;
 using IContainer = QuestPDF.Infrastructure.IContainer;
 
 namespace EvoOffer.Services;
 
-/// <summary>Letterhead offer template shared by the app's export and PDF preview.</summary>
+/// <summary>Offer layouts shared by the app's export and PDF preview.</summary>
 internal sealed class OfferPdfTemplate(OfferPdfData offer, OfferPdfOptions options, byte[]? logo) : IDocument
 {
-    private const string Ink = "#17202B";
-    private const string Muted = "#59616A";
-    private const string Rule = "#C7CCD2";
+    private readonly Color Primary = options.AccentColor ?? Color.FromHex(offer.PdfPrimaryColor);
+    private readonly Color Ink = options.TextColor ?? Color.FromHex(offer.PdfTextColor);
+    private readonly Color Muted = options.SecondaryColor ?? Color.FromHex(offer.PdfSecondaryColor);
+    private Color Rule => Tint(Muted, 0.67);
+    private Color PaperTint => Tint(Muted, 0.93);
+    private Color OnPrimary => ContrastingInk(Primary);
+    private string TemplateId => OfferPdfTemplates.Normalize(options.TemplateId ?? offer.PdfTemplateId);
+    private bool Modern => TemplateId == OfferPdfTemplates.Modern;
+    private bool Minimal => TemplateId == OfferPdfTemplates.Minimal;
     private bool Romanian => offer.Language != AppSettings.English;
     private CultureInfo Culture => CultureInfo.GetCultureInfo(Romanian ? "ro-RO" : "en-GB");
     private string Localize(string romanian, string english) => Romanian ? romanian : english;
     private string Title => options.Title ?? Localize("Ofertă comercială", "Commercial offer");
     private string Money(decimal value) => $"{value.ToString("N2", Culture)} RON";
     private string Rate(decimal value) => value.ToString("0.##", Culture);
+
+    private static Color Tint(Color color, double whiteAmount)
+    {
+        // Compose transparency over the white page before producing an opaque tint.
+        byte Blend(byte component) => (byte)Math.Round(255 - (255 - component)
+            * (color.Alpha / 255d) * (1 - whiteAmount));
+        return Color.FromRGB(Blend(color.Red), Blend(color.Green), Blend(color.Blue));
+    }
+
+    private static Color ContrastingInk(Color background)
+    {
+        double Linear(byte component)
+        {
+            var value = (255 - (255 - component) * (background.Alpha / 255d)) / 255d;
+            return value <= 0.04045 ? value / 12.92 : Math.Pow((value + 0.055) / 1.055, 2.4);
+        }
+
+        var luminance = 0.2126 * Linear(background.Red) + 0.7152 * Linear(background.Green)
+            + 0.0722 * Linear(background.Blue);
+        var blackContrast = (luminance + 0.05) / 0.05;
+        var whiteContrast = 1.05 / (luminance + 0.05);
+        return Color.FromHex(blackContrast >= whiteContrast ? "#000000" : "#FFFFFF");
+    }
 
     public DocumentMetadata GetMetadata() => new()
     {
@@ -34,13 +64,14 @@ internal sealed class OfferPdfTemplate(OfferPdfData offer, OfferPdfOptions optio
             page.Margin(options.Margin);
             page.DefaultTextStyle(style => style.FontFamily(options.FontFamily)
                 .FontSize(options.FontSize).FontColor(Ink).LineHeight(1.2f));
-            page.Header().PaddingBottom(24).Column(header =>
+            page.Header().PaddingBottom(Minimal ? 16 : Modern ? 20 : 24).Column(header =>
             {
-                header.Item().ShowOnce().Element(ComposeLetterhead);
+                header.Item().ShowOnce().Element(Modern ? ComposeModernLetterhead
+                    : Minimal ? ComposeMinimalLetterhead : ComposeLetterhead);
                 header.Item().SkipOnce().BorderBottom(0.7f).BorderColor(Rule).PaddingBottom(10).Row(row =>
                 {
                     row.RelativeItem().Text(string.IsNullOrWhiteSpace(offer.IssuerName) ? Title : offer.IssuerName)
-                        .SemiBold().FontColor(options.AccentColor);
+                        .SemiBold().FontColor(Primary);
                     row.RelativeItem().AlignRight().Text($"{Title} / {offer.ClientName}")
                         .FontSize(options.FontSize * 0.85f).FontColor(Muted);
                 });
@@ -48,14 +79,16 @@ internal sealed class OfferPdfTemplate(OfferPdfData offer, OfferPdfOptions optio
 
             page.Content().Column(content =>
             {
-                content.Item().Element(ComposeIntroduction);
-                content.Item().EnsureSpace(options.FontSize * 8).Element(ComposeTable);
+                content.Item().Element(Modern ? ComposeModernIntroduction
+                    : Minimal ? ComposeMinimalIntroduction : ComposeIntroduction);
+                content.Item().EnsureSpace(options.FontSize * 8).Element(Modern ? ComposeProductCards : ComposeTable);
                 var closing = options.FooterText ?? Localize(
                     "Vă mulțumim pentru încredere.\nSuntem la dispoziția dvs. pentru orice detalii suplimentare sau clarificări.",
                     "Thank you for your trust.\nPlease contact us for any further details or clarification.");
                 content.Item().PreventPageBreak().Column(summary =>
                 {
-                    summary.Item().ShowEntire().Element(ComposeTotals);
+                    summary.Item().ShowEntire().Element(Modern ? ComposeModernTotals
+                        : Minimal ? ComposeMinimalTotals : ComposeTotals);
                     if (!string.IsNullOrWhiteSpace(closing))
                         summary.Item().PaddingTop(18).Text(closing).Italic()
                             .FontSize(options.FontSize * 0.9f).FontColor(Muted);
@@ -87,7 +120,7 @@ internal sealed class OfferPdfTemplate(OfferPdfData offer, OfferPdfOptions optio
                 {
                     brand.Spacing(6);
                     brand.Item().Text(string.IsNullOrWhiteSpace(offer.IssuerName) ? Title : offer.IssuerName)
-                        .FontSize(options.FontSize * 2.5f).SemiBold().FontColor(options.AccentColor);
+                        .FontSize(options.FontSize * 2.5f).SemiBold().FontColor(Primary);
                     var subtitle = string.IsNullOrWhiteSpace(options.Tagline)
                         ? (string.IsNullOrWhiteSpace(offer.IssuerName) ? string.Empty : Title.ToUpper(Culture))
                         : options.Tagline;
@@ -140,8 +173,8 @@ internal sealed class OfferPdfTemplate(OfferPdfData offer, OfferPdfOptions optio
             column.Item().EnsureSpace(options.FontSize * 5).Row(row =>
             {
                 row.AutoItem().PaddingRight(12).PaddingTop(2).Text(Localize("CĂTRE", "TO"))
-                    .SemiBold().FontSize(options.FontSize * 1.3f).FontColor(options.AccentColor);
-                row.RelativeItem().BorderBottom(0.8f).BorderColor(options.AccentColor).PaddingBottom(6)
+                    .SemiBold().FontSize(options.FontSize * 1.3f).FontColor(Primary);
+                row.RelativeItem().BorderBottom(0.8f).BorderColor(Primary).PaddingBottom(6)
                     .Text(offer.ClientName).SemiBold().FontSize(options.FontSize * 1.15f);
             });
             column.Item().Text(Localize("Stimată Doamnă / Stimate Domn,", "Dear Sir / Madam,")).SemiBold();
@@ -154,6 +187,205 @@ internal sealed class OfferPdfTemplate(OfferPdfData offer, OfferPdfOptions optio
                     text.Span(validUntil.ToString("d MMMM yyyy", Culture)).SemiBold();
                     text.Span(".");
                 });
+        });
+    }
+
+    private void ComposeModernLetterhead(IContainer container)
+    {
+        container.Column(column =>
+        {
+            column.Item().Background(Primary).Padding(18).Row(row =>
+            {
+                row.Spacing(16);
+                if (logo is not null)
+                    row.ConstantItem(64).Height(64).Background("#FFFFFF").Padding(5).Image(logo).FitArea();
+                row.RelativeItem().Column(brand =>
+                {
+                    brand.Spacing(6);
+                    if (!string.IsNullOrWhiteSpace(offer.IssuerName))
+                        brand.Item().Text(offer.IssuerName).FontSize(options.FontSize * 1.8f)
+                            .SemiBold().FontColor(OnPrimary);
+                    brand.Item().Text(Title).FontSize(options.FontSize * 1.25f).FontColor(OnPrimary);
+                    if (!string.IsNullOrWhiteSpace(options.Tagline))
+                        brand.Item().Text(options.Tagline).FontSize(options.FontSize * 0.85f).FontColor(OnPrimary);
+                });
+            });
+            column.Item().PaddingTop(12).Row(row =>
+            {
+                row.Spacing(20);
+                row.RelativeItem().Column(address =>
+                {
+                    AddContact(address, offer.AddressLine1);
+                    AddContact(address, offer.AddressLine2);
+                });
+                row.RelativeItem().Column(contact =>
+                {
+                    AddContact(contact, offer.Email);
+                    AddContact(contact, offer.PhoneNumber);
+                    AddContact(contact, VatContact);
+                });
+            });
+        });
+    }
+
+    private void ComposeMinimalLetterhead(IContainer container)
+    {
+        container.BorderBottom(1.2f).BorderColor(Primary).PaddingBottom(12).Column(column =>
+        {
+            column.Spacing(8);
+            column.Item().Row(row =>
+            {
+                row.Spacing(12);
+                if (logo is not null)
+                    row.ConstantItem(42).Height(42).Image(logo).FitArea();
+                row.RelativeItem(1.6f).Column(brand =>
+                {
+                    brand.Spacing(4);
+                    brand.Item().Text(string.IsNullOrWhiteSpace(offer.IssuerName) ? Title : offer.IssuerName)
+                        .SemiBold().FontSize(options.FontSize * 1.4f).FontColor(Primary);
+                    if (!string.IsNullOrWhiteSpace(options.Tagline))
+                        brand.Item().Text(options.Tagline).FontSize(options.FontSize * 0.8f).FontColor(Muted);
+                });
+                if (!string.IsNullOrWhiteSpace(offer.IssuerName))
+                    row.RelativeItem().AlignRight().Text(Title).FontSize(options.FontSize * 1.15f).FontColor(Muted);
+            });
+            var address = string.Join(" · ", new[] { offer.AddressLine1, offer.AddressLine2 }
+                .Where(value => !string.IsNullOrWhiteSpace(value)));
+            var contacts = string.Join(" · ", new[] { offer.Email, offer.PhoneNumber, VatContact }
+                .Where(value => !string.IsNullOrWhiteSpace(value)));
+            AddContact(column, address);
+            AddContact(column, contacts);
+        });
+    }
+
+    private string VatContact => string.IsNullOrWhiteSpace(offer.VatNumber)
+        ? string.Empty : $"{Localize("Cod TVA", "VAT number")}: {offer.VatNumber}";
+
+    private void AddContact(ColumnDescriptor column, string value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+            column.Item().Text(value).FontSize(options.FontSize * 0.85f).FontColor(Muted);
+    }
+
+    private void ComposeModernIntroduction(IContainer container)
+    {
+        container.PaddingBottom(16).Column(column =>
+        {
+            column.Spacing(12);
+            column.Item().EnsureSpace(options.FontSize * 6).Background(PaperTint)
+                .BorderLeft(3).BorderColor(Primary).PaddingHorizontal(14).PaddingVertical(12).Column(client =>
+                {
+                    client.Spacing(4);
+                    client.Item().Text(Localize("PREGĂTITĂ PENTRU", "PREPARED FOR"))
+                        .FontSize(options.FontSize * 0.8f).SemiBold().FontColor(Muted);
+                    client.Item().Text(offer.ClientName).FontSize(options.FontSize * 1.35f).SemiBold();
+                });
+            ComposeMessage(column);
+        });
+    }
+
+    private void ComposeMinimalIntroduction(IContainer container)
+    {
+        container.PaddingBottom(18).Column(column =>
+        {
+            column.Spacing(12);
+            column.Item().EnsureSpace(options.FontSize * 4).Text(text =>
+            {
+                text.Span(Localize("Către: ", "To: ")).FontColor(Muted);
+                text.Span(offer.ClientName).SemiBold();
+            });
+            ComposeMessage(column);
+        });
+    }
+
+    private void ComposeMessage(ColumnDescriptor column)
+    {
+        column.Item().Text(Localize("Stimată Doamnă / Stimate Domn,", "Dear Sir / Madam,")).SemiBold();
+        if (!string.IsNullOrWhiteSpace(offer.Message))
+            column.Item().Text(offer.Message).LineHeight(1.4f);
+        if (options.ValidUntil is { } validUntil)
+            column.Item().Text(text =>
+            {
+                text.Span(Localize("Prezenta ofertă este valabilă până la data de: ", "This offer is valid until: "));
+                text.Span(validUntil.ToString("d MMMM yyyy", Culture)).SemiBold();
+                text.Span(".");
+            });
+    }
+
+    private void ComposeProductCards(IContainer container)
+    {
+        // A one-column table repeats the section heading while allowing unusually long cards to split.
+        container.Table(table =>
+        {
+            table.ColumnsDefinition(columns => columns.RelativeColumn());
+            table.Header(header => header.Cell().PaddingBottom(10).Text(Localize("Produse și servicii", "Products and services"))
+                .FontSize(options.FontSize * 1.2f).SemiBold().FontColor(Primary));
+            var mixedRates = offer.Items.Select(item => item.VatRate).Distinct().Skip(1).Any();
+            foreach (var item in offer.Items)
+            {
+                table.Cell().PaddingBottom(8).PreventPageBreak().Border(0.7f).BorderColor(Rule).Column(card =>
+                {
+                    card.Item().Background(PaperTint).PaddingHorizontal(10).PaddingVertical(7).Row(row =>
+                    {
+                        row.Spacing(12);
+                        var numberWidth = Math.Max(26, item.Number.ToString(CultureInfo.InvariantCulture).Length
+                            * options.FontSize * 0.65f);
+                        row.ConstantItem(numberWidth).Text(item.Number.ToString(Culture))
+                            .SemiBold().FontColor(Primary);
+                        row.RelativeItem().Element(product => ComposeProductDetails(product, item, emphasizeName: true));
+                    });
+                    card.Item().PaddingHorizontal(10).PaddingVertical(7).Row(row =>
+                    {
+                        row.Spacing(12);
+                        PriceMetric(row.RelativeItem(), Localize("Preț unitar (fără T.V.A.)", "Unit price (excl. VAT)"), Money(item.UnitPrice));
+                        PriceMetric(row.RelativeItem(0.75f), Localize("Cantitate", "Quantity"),
+                            item.Quantity.ToString("0.############################", Culture));
+                        PriceMetric(row.RelativeItem(), Localize("TVA calculat", "VAT amount")
+                            + (mixedRates ? $" ({Rate(item.VatRate)}%)" : string.Empty), Money(item.VatAmount));
+                        PriceMetric(row.RelativeItem(1.2f), Localize("Preț total", "Total price"), Money(item.Total), emphasize: true);
+                    });
+                });
+            }
+        });
+    }
+
+    private void PriceMetric(IContainer container, string label, string value, bool emphasize = false)
+    {
+        container.Column(column =>
+        {
+            column.Spacing(4);
+            column.Item().Text(label).FontSize(options.FontSize * 0.8f).FontColor(Muted);
+            var amount = column.Item().Text(value).FontSize(options.FontSize * 0.95f);
+            if (emphasize)
+                amount.SemiBold().FontColor(Primary);
+        });
+    }
+
+    private void ComposeProductDetails(IContainer container, OfferPdfLine item, bool emphasizeName = false)
+    {
+        container.Column(product =>
+        {
+            product.Spacing(3);
+            var name = product.Item().Text(item.Name);
+            if (emphasizeName)
+                name.SemiBold();
+            foreach (var (label, value) in new[]
+            {
+                (Localize("Mărime", "Size"), item.Size),
+                (Localize("Culoare", "Color"), item.Color)
+            })
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                    continue;
+                product.Item().Text(text =>
+                {
+                    text.DefaultTextStyle(style => style.FontSize(options.FontSize * 0.85f));
+                    text.Span($"{label}: ").SemiBold();
+                    text.Span(value);
+                });
+            }
+            if (!string.IsNullOrWhiteSpace(item.Category))
+                product.Item().Text(item.Category).FontSize(options.FontSize * 0.85f).FontColor(Muted);
         });
     }
 
@@ -183,10 +415,14 @@ internal sealed class OfferPdfTemplate(OfferPdfData offer, OfferPdfOptions optio
                 };
                 for (var index = 0; index < labels.Length; index++)
                 {
-                    var cell = header.Cell().Background(options.AccentColor).PaddingHorizontal(5).PaddingVertical(10).AlignMiddle();
+                    var cell = Minimal
+                        ? header.Cell().BorderBottom(1).BorderColor(Primary)
+                        : header.Cell().Background(Primary);
+                    cell = cell.PaddingHorizontal(5).PaddingVertical(Minimal ? 8 : 10).AlignMiddle();
                     if (index != 1)
                         cell = cell.AlignCenter();
-                    cell.Text(labels[index]).FontSize(options.FontSize * 0.82f).SemiBold().FontColor("#FFFFFF");
+                    cell.Text(labels[index]).FontSize(options.FontSize * 0.82f).SemiBold()
+                        .FontColor(Minimal ? Primary : OnPrimary);
                 }
             });
 
@@ -199,13 +435,8 @@ internal sealed class OfferPdfTemplate(OfferPdfData offer, OfferPdfOptions optio
                     .PaddingVertical(10).Row(row =>
                 {
                     Cell(row.ConstantItem(numberWidth)).AlignCenter().Text(item.Number.ToString(Culture));
-                    Cell(row.RelativeItem(2.9f)).Column(product =>
-                    {
-                        product.Spacing(3);
-                        product.Item().Text(item.Name);
-                        if (!string.IsNullOrWhiteSpace(item.Category))
-                            product.Item().Text(item.Category).FontSize(options.FontSize * 0.85f).FontColor(Muted);
-                    });
+                    // Keep product text unconstrained, including words wider than the column.
+                    Cell(row.RelativeItem(2.9f)).Element(product => ComposeProductDetails(product, item));
                     Cell(row.RelativeItem(1.3f)).AlignRight().Text(Money(item.UnitPrice)).FontSize(options.FontSize * 0.9f);
                     Cell(row.RelativeItem(0.75f)).AlignCenter().Text(item.Quantity.ToString("0.############################", Culture))
                         .FontSize(options.FontSize * 0.9f);
@@ -233,12 +464,12 @@ internal sealed class OfferPdfTemplate(OfferPdfData offer, OfferPdfOptions optio
             if (rates.Length == 1)
                 vatLabel += $" ({Rate(rates[0])}%)";
             SummaryRow(vatLabel, offer.VatTotal);
-            column.Item().Background(options.AccentColor).PaddingHorizontal(10).PaddingVertical(10).Row(row =>
+            column.Item().Background(Primary).PaddingHorizontal(10).PaddingVertical(10).Row(row =>
             {
                 row.RelativeItem().AlignMiddle().Text(Localize("TOTAL CU T.V.A.", "TOTAL INCL. VAT"))
-                    .SemiBold().FontSize(options.FontSize * 1.25f).FontColor("#FFFFFF");
+                    .SemiBold().FontSize(options.FontSize * 1.25f).FontColor(OnPrimary);
                 row.RelativeItem().AlignRight().AlignMiddle().Text(Money(offer.GrandTotal))
-                    .Bold().FontSize(options.FontSize * 1.4f).FontColor("#FFFFFF");
+                    .Bold().FontSize(options.FontSize * 1.4f).FontColor(OnPrimary);
             });
 
             void SummaryRow(string label, decimal amount)
@@ -246,10 +477,57 @@ internal sealed class OfferPdfTemplate(OfferPdfData offer, OfferPdfOptions optio
                 column.Item().BorderBottom(0.6f).BorderColor(Rule).PaddingHorizontal(10).PaddingVertical(9).Row(row =>
                 {
                     row.RelativeItem().Text(label);
-                    row.RelativeItem().AlignRight().Text(Money(amount)).SemiBold().FontColor(options.AccentColor);
+                    row.RelativeItem().AlignRight().Text(Money(amount)).SemiBold().FontColor(Primary);
                 });
             }
         });
+    }
+
+    private void ComposeModernTotals(IContainer container)
+    {
+        container.PaddingTop(4).Background(PaperTint).Padding(12).Column(column =>
+        {
+            ComposePlainSummary(column);
+            column.Item().PaddingTop(10).BorderTop(1).BorderColor(Primary).PaddingTop(10).Row(row =>
+            {
+                row.RelativeItem().AlignMiddle().Text(Localize("TOTAL CU T.V.A.", "TOTAL INCL. VAT"))
+                    .SemiBold().FontColor(Primary);
+                row.RelativeItem().AlignRight().Text(Money(offer.GrandTotal))
+                    .Bold().FontSize(options.FontSize * 1.6f).FontColor(Primary);
+            });
+        });
+    }
+
+    private void ComposeMinimalTotals(IContainer container)
+    {
+        container.PaddingTop(8).Column(column =>
+        {
+            ComposePlainSummary(column);
+            column.Item().PaddingTop(8).BorderTop(1.2f).BorderColor(Primary).PaddingTop(10).Row(row =>
+            {
+                row.RelativeItem().AlignMiddle().Text(Localize("TOTAL CU T.V.A.", "TOTAL INCL. VAT")).SemiBold();
+                row.RelativeItem().AlignRight().Text(Money(offer.GrandTotal)).Bold().FontSize(options.FontSize * 1.3f);
+            });
+        });
+    }
+
+    private void ComposePlainSummary(ColumnDescriptor column)
+    {
+        SummaryRow(Localize("Subtotal fără T.V.A.", "Subtotal excl. VAT"), offer.Subtotal);
+        var rates = offer.Items.Select(item => item.VatRate).Distinct().ToArray();
+        var vatLabel = Localize("Valoare T.V.A.", "VAT amount");
+        if (rates.Length == 1)
+            vatLabel += $" ({Rate(rates[0])}%)";
+        SummaryRow(vatLabel, offer.VatTotal);
+
+        void SummaryRow(string label, decimal amount)
+        {
+            column.Item().PaddingVertical(5).Row(row =>
+            {
+                row.RelativeItem().Text(label).FontColor(Muted);
+                row.RelativeItem().AlignRight().Text(Money(amount)).SemiBold();
+            });
+        }
     }
 
     // Small vector contact icons stay sharp at print resolution and do not depend on icon fonts.
@@ -261,6 +539,6 @@ internal sealed class OfferPdfTemplate(OfferPdfData offer, OfferPdfOptions optio
             "email" => "<rect x='2' y='4' width='20' height='16' rx='1'/><path d='m2 5 10 8L22 5'/>",
             _ => "<path d='m5 2 4 5-3 3c2 4 4 6 8 8l3-3 5 4c-1 4-4 5-8 3C8 19 3 14 1 7 0 4 2 2 5 2Z'/>"
         };
-        return $"<svg xmlns='http://www.w3.org/2000/svg' width='24' height='26' viewBox='0 0 24 26' fill='none' stroke='{options.AccentColor}' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'>{paths}</svg>";
+        return $"<svg xmlns='http://www.w3.org/2000/svg' width='24' height='26' viewBox='0 0 24 26' fill='none' stroke='{Primary}' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'>{paths}</svg>";
     }
 }

@@ -16,7 +16,8 @@ public sealed class OfferPdfData
                 throw new ArgumentException($"Item {item.Number} has an invalid quantity.", nameof(items));
 
             return new OfferPdfLine(item.Number, item.Category, item.Name, item.UnitPrice,
-                item.Quantity, item.VatRate, item.NetTotal, item.VatAmount, item.Total);
+                item.Quantity, item.VatRate, item.NetTotal, item.VatAmount, item.Total,
+                item.SelectedVariant.Size, item.SelectedVariant.Color);
         }).ToArray();
         if (lines.Length == 0)
             throw new ArgumentException("Add at least one item before generating an offer.", nameof(items));
@@ -27,6 +28,10 @@ public sealed class OfferPdfData
         IssuerName = issuer.IssuerName;
         LogoPath = string.IsNullOrWhiteSpace(issuer.LogoPath) ? null : issuer.LogoPath;
         Language = issuer.Language == AppSettings.English ? AppSettings.English : AppSettings.Romanian;
+        PdfTemplateId = OfferPdfTemplates.Normalize(issuer.PdfTemplateId);
+        PdfPrimaryColor = PdfColorValue.Normalize(issuer.PdfPrimaryColor, PdfColorValue.DefaultPrimary);
+        PdfSecondaryColor = PdfColorValue.Normalize(issuer.PdfSecondaryColor, PdfColorValue.DefaultSecondary);
+        PdfTextColor = PdfColorValue.Normalize(issuer.PdfTextColor, PdfColorValue.DefaultText);
         AddressLine1 = issuer.AddressLine1;
         AddressLine2 = issuer.AddressLine2;
         Email = issuer.Email;
@@ -44,6 +49,10 @@ public sealed class OfferPdfData
     public string IssuerName { get; }
     public string? LogoPath { get; }
     public string Language { get; }
+    public string PdfTemplateId { get; }
+    public string PdfPrimaryColor { get; }
+    public string PdfSecondaryColor { get; }
+    public string PdfTextColor { get; }
     public string AddressLine1 { get; }
     public string AddressLine2 { get; }
     public string Email { get; }
@@ -57,4 +66,5 @@ public sealed class OfferPdfData
 }
 
 public sealed record OfferPdfLine(int Number, string Category, string Name, decimal UnitPrice,
-    decimal Quantity, decimal VatRate, decimal NetTotal, decimal VatAmount, decimal Total);
+    decimal Quantity, decimal VatRate, decimal NetTotal, decimal VatAmount, decimal Total,
+    string Size = "", string Color = "");

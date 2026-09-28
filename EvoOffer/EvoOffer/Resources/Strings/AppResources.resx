@@ -1,0 +1,707 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms</value>
+  </resheader>
+  <data name="Actions" xml:space="preserve">
+    <value>Acțiuni</value>
+  </data>
+  <data name="Add" xml:space="preserve">
+    <value>Adaugă</value>
+  </data>
+  <data name="AddressLine1" xml:space="preserve">
+    <value>Adresă, rândul 1</value>
+  </data>
+  <data name="AddressLine2" xml:space="preserve">
+    <value>Adresă, rândul 2</value>
+  </data>
+  <data name="AmbiguousProductStatus" xml:space="preserve">
+    <value>{0} are prețuri diferite pentru aceeași dimensiune și culoare. Corectați atributele din fișierul CSV și importați-l din nou.</value>
+  </data>
+  <data name="AmbiguousProductValidation" xml:space="preserve">
+    <value>Acest produs are prețuri diferite pentru aceeași dimensiune și culoare. Corectați atributele din fișierul CSV înainte de a-l adăuga.</value>
+  </data>
+  <data name="AppSubtitle" xml:space="preserve">
+    <value>Creați oferte profesionale rapid și ușor</value>
+  </data>
+  <data name="AppTitle" xml:space="preserve">
+    <value>Generator de oferte</value>
+  </data>
+  <data name="AppearsInPdf" xml:space="preserve">
+    <value> (va apărea în PDF)</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>Răsfoiește…</value>
+  </data>
+  <data name="BrowseDataFile" xml:space="preserve">
+    <value>Alegeți un fișier de date CSV</value>
+  </data>
+  <data name="BrowseLogo" xml:space="preserve">
+    <value>Alegeți o imagine pentru siglă</value>
+  </data>
+  <data name="BrowseSaveDirectory" xml:space="preserve">
+    <value>Alegeți un dosar pentru salvarea fișierelor PDF</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Anulează</value>
+  </data>
+  <data name="CatalogImportedHelp" xml:space="preserve">
+    <value>Au fost importate cu succes {0} produse. Selectați o categorie pe ecranul principal pentru a le consulta.</value>
+  </data>
+  <data name="CatalogUnavailable" xml:space="preserve">
+    <value>Catalog indisponibil</value>
+  </data>
+  <data name="Category" xml:space="preserve">
+    <value>Categorie</value>
+  </data>
+  <data name="CheckOffer" xml:space="preserve">
+    <value>Verificați oferta</value>
+  </data>
+  <data name="CheckVatPercentage" xml:space="preserve">
+    <value>Verificați procentul TVA</value>
+  </data>
+  <data name="ChooseCsvFile" xml:space="preserve">
+    <value>Alegeți un fișier disponibil cu extensia .csv.</value>
+  </data>
+  <data name="CityPostalCodeCountry" xml:space="preserve">
+    <value>Localitate, cod poștal, țară</value>
+  </data>
+  <data name="ClearSelection" xml:space="preserve">
+    <value>Șterge selecția</value>
+  </data>
+  <data name="ClientName" xml:space="preserve">
+    <value>Nume client</value>
+  </data>
+  <data name="ClientNameRequired" xml:space="preserve">
+    <value>Introduceți numele clientului înainte de a genera oferta.</value>
+  </data>
+  <data name="Color" xml:space="preserve">
+    <value>Culoare</value>
+  </data>
+  <data name="Columns" xml:space="preserve">
+    <value>Coloane</value>
+  </data>
+  <data name="ContactData" xml:space="preserve">
+    <value>Date de contact</value>
+  </data>
+  <data name="Controls_AccessNotSaved" xml:space="preserve">
+    <value>Accesul la elementul selectat nu a putut fi salvat.</value>
+  </data>
+  <data name="Controls_CategoryClose" xml:space="preserve">
+    <value>Închideți lista de categorii</value>
+  </data>
+  <data name="Controls_CategoryDescription" xml:space="preserve">
+    <value>Categoria produsului: {0}</value>
+  </data>
+  <data name="Controls_CategoryDismiss" xml:space="preserve">
+    <value>Închide lista de categorii</value>
+  </data>
+  <data name="Controls_CategoryLevel" xml:space="preserve">
+    <value>Subcategorie, nivelul {0}</value>
+  </data>
+  <data name="Controls_CategoryOpen" xml:space="preserve">
+    <value>Deschideți lista de categorii</value>
+  </data>
+  <data name="Controls_CategoryRoot" xml:space="preserve">
+    <value>Categorie principală</value>
+  </data>
+  <data name="Controls_CategoryTitle" xml:space="preserve">
+    <value>Selectați categoria</value>
+  </data>
+  <data name="Controls_ChooseCsv" xml:space="preserve">
+    <value>Alegeți un fișier de date CSV</value>
+  </data>
+  <data name="Controls_ChooseLogo" xml:space="preserve">
+    <value>Alegeți o imagine pentru siglă</value>
+  </data>
+  <data name="Controls_ColorBlack" xml:space="preserve">
+    <value>Negru</value>
+  </data>
+  <data name="Controls_ColorBlue" xml:space="preserve">
+    <value>Albastru</value>
+  </data>
+  <data name="Controls_ColorChannelDescription" xml:space="preserve">
+    <value>{0}, canal de {1}</value>
+  </data>
+  <data name="Controls_ColorChannelHint" xml:space="preserve">
+    <value>Ajustați de la 0 la 255.</value>
+  </data>
+  <data name="Controls_ColorCharcoal" xml:space="preserve">
+    <value>Gri închis</value>
+  </data>
+  <data name="Controls_ColorChoose" xml:space="preserve">
+    <value>Alegeți</value>
+  </data>
+  <data name="Controls_ColorClosePicker" xml:space="preserve">
+    <value>Închideți selectorul pentru {0}</value>
+  </data>
+  <data name="Controls_ColorDone" xml:space="preserve">
+    <value>Gata</value>
+  </data>
+  <data name="Controls_ColorGold" xml:space="preserve">
+    <value>Auriu</value>
+  </data>
+  <data name="Controls_ColorGreen" xml:space="preserve">
+    <value>Verde</value>
+  </data>
+  <data name="Controls_ColorHexDescription" xml:space="preserve">
+    <value>Cod hexazecimal pentru {0}</value>
+  </data>
+  <data name="Controls_ColorHexError" xml:space="preserve">
+    <value>Introduceți o culoare hexazecimală validă, de exemplu #147EF0 (3 sau 6 cifre).</value>
+  </data>
+  <data name="Controls_ColorHexHint" xml:space="preserve">
+    <value>Introduceți 3 sau 6 cifre hexazecimale, opțional precedate de #.</value>
+  </data>
+  <data name="Controls_ColorInvalidSelection" xml:space="preserve">
+    <value>Alegeți o culoare validă pentru {0} înainte de salvare.</value>
+  </data>
+  <data name="Controls_ColorNavy" xml:space="preserve">
+    <value>Bleumarin</value>
+  </data>
+  <data name="Controls_ColorOpenPicker" xml:space="preserve">
+    <value>Alegeți {0}</value>
+  </data>
+  <data name="Controls_ColorOptionsHint" xml:space="preserve">
+    <value>Alegeți o mostră sau ajustați canalele de roșu, verde și albastru.</value>
+  </data>
+  <data name="Controls_ColorOrange" xml:space="preserve">
+    <value>Portocaliu</value>
+  </data>
+  <data name="Controls_ColorPurple" xml:space="preserve">
+    <value>Mov</value>
+  </data>
+  <data name="Controls_ColorRed" xml:space="preserve">
+    <value>Roșu</value>
+  </data>
+  <data name="Controls_ColorSlate" xml:space="preserve">
+    <value>Gri-albăstrui</value>
+  </data>
+  <data name="Controls_ColorSwatchDescription" xml:space="preserve">
+    <value>{0}, {1}. Alegeți culoarea.</value>
+  </data>
+  <data name="Controls_ColorTeal" xml:space="preserve">
+    <value>Verde-albăstrui</value>
+  </data>
+  <data name="Controls_ColorWhite" xml:space="preserve">
+    <value>Alb</value>
+  </data>
+  <data name="Controls_CsvFormat" xml:space="preserve">
+    <value>Alegeți un fișier CSV pentru date.</value>
+  </data>
+  <data name="Controls_CsvUnavailable" xml:space="preserve">
+    <value>Fișierul de date selectat nu mai este disponibil.</value>
+  </data>
+  <data name="Controls_FileWindowUnavailable" xml:space="preserve">
+    <value>Nu este disponibilă nicio fereastră pentru selectarea fișierului.</value>
+  </data>
+  <data name="Controls_FolderUnsupported" xml:space="preserve">
+    <value>Selectarea dosarelor nu este acceptată pe această platformă.</value>
+  </data>
+  <data name="Controls_FolderWindowUnavailable" xml:space="preserve">
+    <value>Nu este disponibilă nicio fereastră pentru selectarea dosarului.</value>
+  </data>
+  <data name="Controls_LogoFormat" xml:space="preserve">
+    <value>Alegeți o imagine PNG, JPEG sau WebP pentru siglă.</value>
+  </data>
+  <data name="Controls_LogoUnavailable" xml:space="preserve">
+    <value>Imaginea selectată pentru siglă nu mai este disponibilă.</value>
+  </data>
+  <data name="Controls_NoLocalPath" xml:space="preserve">
+    <value>Elementul selectat nu are o cale locală.</value>
+  </data>
+  <data name="Controls_PathAccessNotSaved" xml:space="preserve">
+    <value>Accesul la locațiile selectate nu a putut fi reținut pentru următoarea pornire.</value>
+  </data>
+  <data name="Controls_QuantityHint" xml:space="preserve">
+    <value>Introduceți cantitatea produsului</value>
+  </data>
+  <data name="Controls_QuantityInvalidHint" xml:space="preserve">
+    <value>Introduceți o cantitate între 1 și 999999</value>
+  </data>
+  <data name="Controls_SelectedSuffix" xml:space="preserve">
+    <value>, selectat</value>
+  </data>
+  <data name="CsvImportFailed" xml:space="preserve">
+    <value>Importul CSV a eșuat</value>
+  </data>
+  <data name="CsvReadFailedHelp" xml:space="preserve">
+    <value>Fișierul CSV nu a putut fi citit. Selectați un fișier CSV disponibil și încercați din nou.</value>
+  </data>
+  <data name="CustomOfferText" xml:space="preserve">
+    <value>Textul personalizat al ofertei</value>
+  </data>
+  <data name="CustomText" xml:space="preserve">
+    <value>Text personalizat</value>
+  </data>
+  <data name="CustomTextPlaceholder" xml:space="preserve">
+    <value>Adăugați un mesaj personalizat ofertei…</value>
+  </data>
+  <data name="DataFile" xml:space="preserve">
+    <value>Fișier de date</value>
+  </data>
+  <data name="DataFileCategoriesHelp" xml:space="preserve">
+    <value>Folosiți &gt; pentru subcategorii și | pentru mai multe căi de categorii, de exemplu: A &gt; B &gt; C | D. Selectați din nou fișierul pentru a importa o versiune actualizată.</value>
+  </data>
+  <data name="DataFileDimensionsHelp" xml:space="preserve">
+    <value>Dacă mărimea lipsește, Atribute: Lungime Mm (variante de produs), Atribute: Latime Mm (variante de produs) și Atribute: Grosime Mm (variante de produs) se combină în lungime mm x lățime mm x grosime mm. Dimensiunile necompletate sunt omise; de exemplu, dacă există doar grosimea, se afișează 22 mm.</value>
+  </data>
+  <data name="DataFilePath" xml:space="preserve">
+    <value>Calea fișierului de date</value>
+  </data>
+  <data name="DataFileRequiredHeadersHelp" xml:space="preserve">
+    <value>Alegeți un fișier CSV, apoi apăsați Salvează setările pentru a-l valida și importa. Coloane obligatorii: Denumire Produs, Pret, Categorie / Categorii. Pret include TVA.</value>
+  </data>
+  <data name="DataFileSelectionFailed" xml:space="preserve">
+    <value>Fișierul de date nu a putut fi selectat</value>
+  </data>
+  <data name="DataFileVariantHeadersHelp" xml:space="preserve">
+    <value>Coloane opționale pentru variante: Atribute: Culoare (variante de produs), Atribute: Culoare (lista), Atribute: Cantitate (variante de produs), Atribute: Cantitate_11 (lista), Atribute: Marime (variante de produs). Produsele cu același nume sunt grupate, iar mărimea, culoarea și prețul sunt preluate din fiecare rând.</value>
+  </data>
+  <data name="DecreaseQuantity" xml:space="preserve">
+    <value>Micșorează cantitatea</value>
+  </data>
+  <data name="DefaultOfferMessage" xml:space="preserve">
+    <value>Vă mulțumim pentru interesul acordat produselor și serviciilor noastre. Mai jos găsiți cea mai bună ofertă, adaptată nevoilor dumneavoastră. Pentru orice întrebări, nu ezitați să ne contactați.</value>
+  </data>
+  <data name="DefaultOfferMessageHelp" xml:space="preserve">
+    <value>Folosiți acest mesaj pentru oferta curentă și de fiecare dată când resetați formularul.</value>
+  </data>
+  <data name="DefaultOfferMessageLabel" xml:space="preserve">
+    <value>Mesajul implicit al ofertei</value>
+  </data>
+  <data name="Email" xml:space="preserve">
+    <value>E-mail</value>
+  </data>
+  <data name="EmailAddress" xml:space="preserve">
+    <value>Adresă de e-mail</value>
+  </data>
+  <data name="EmailPlaceholder" xml:space="preserve">
+    <value>nume@exemplu.ro</value>
+  </data>
+  <data name="EmailValidation" xml:space="preserve">
+    <value>Introduceți o adresă de e-mail validă, de exemplu nume@exemplu.ro.</value>
+  </data>
+  <data name="EmptyOfferHint" xml:space="preserve">
+    <value>Selectați un produs mai sus și apăsați Adaugă.</value>
+  </data>
+  <data name="EmptyOfferTitle" xml:space="preserve">
+    <value>Oferta dumneavoastră începe aici</value>
+  </data>
+  <data name="EnterClientName" xml:space="preserve">
+    <value>Introduceți numele clientului</value>
+  </data>
+  <data name="Exit" xml:space="preserve">
+    <value>Ieșire</value>
+  </data>
+  <data name="FileAccessNotSaved" xml:space="preserve">
+    <value>Accesul la fișiere nu a putut fi memorat</value>
+  </data>
+  <data name="FileAccessNotSavedHelp" xml:space="preserve">
+    <value>Setările au fost salvate, dar accesul la fișierele sau dosarul selectat nu a putut fi memorat. Încercați să salvați din nou sau selectați din nou căile folosind Răsfoiește.</value>
+  </data>
+  <data name="GenerateOffer" xml:space="preserve">
+    <value>Generează oferta</value>
+  </data>
+  <data name="Generating" xml:space="preserve">
+    <value>Se generează…</value>
+  </data>
+  <data name="GrandTotalSummary" xml:space="preserve">
+    <value>Total cu TVA: {0} RON</value>
+  </data>
+  <data name="ImportComplete" xml:space="preserve">
+    <value>Import finalizat</value>
+  </data>
+  <data name="Import_ColorAttribute" xml:space="preserve">
+    <value>culoare</value>
+  </data>
+  <data name="Import_ConflictingAttributes" xml:space="preserve">
+    <value>Un rând de produs are atribute de {0} contradictorii. Păstrați o singură valoare de {0} pe rând.</value>
+  </data>
+  <data name="Import_DuplicateHeader" xml:space="preserve">
+    <value>Antetul „{0}” apare de mai multe ori.</value>
+  </data>
+  <data name="Import_FieldCount" xml:space="preserve">
+    <value>Sunt necesare {0} câmpuri pentru a corespunde rândului de antet.</value>
+  </data>
+  <data name="Import_InvalidCategory" xml:space="preserve">
+    <value>Categoriile nu pot fi goale. Folosiți &gt; între niveluri și | între căile categoriilor.</value>
+  </data>
+  <data name="Import_InvalidEncoding" xml:space="preserve">
+    <value>Fișierul conține text cu o codificare nevalidă. Salvați-l ca CSV UTF-8 și încercați din nou.</value>
+  </data>
+  <data name="Import_InvalidPrice" xml:space="preserve">
+    <value>Pret trebuie să fie un preț zecimal nenegativ, fără simboluri monetare sau separatoare de mii.</value>
+  </data>
+  <data name="Import_MissingHeaders" xml:space="preserve">
+    <value>Din primul rând lipsesc antete obligatorii: {0}.</value>
+  </data>
+  <data name="Import_NameRequired" xml:space="preserve">
+    <value>Denumire Produs nu poate fi gol.</value>
+  </data>
+  <data name="Import_NoProducts" xml:space="preserve">
+    <value>Fișierul CSV trebuie să conțină cel puțin un produs după antet.</value>
+  </data>
+  <data name="Import_PriceTooLarge" xml:space="preserve">
+    <value>Pret este prea mare pentru a calcula în siguranță totalurile ofertei.</value>
+  </data>
+  <data name="Import_RequiredHeaderRow" xml:space="preserve">
+    <value>Primul rând trebuie să conțină: Denumire Produs, Pret, Categorie / Categorii.</value>
+  </data>
+  <data name="Import_RowError" xml:space="preserve">
+    <value>Rândul {0}: {1}</value>
+  </data>
+  <data name="Import_SizeAttribute" xml:space="preserve">
+    <value>mărime</value>
+  </data>
+  <data name="Import_TextAfterQuote" xml:space="preserve">
+    <value>Text neașteptat după ghilimeaua de închidere a unui câmp CSV.</value>
+  </data>
+  <data name="Import_UnclosedQuote" xml:space="preserve">
+    <value>Lipsește ghilimeaua de închidere a unui câmp CSV.</value>
+  </data>
+  <data name="Import_UnexpectedQuote" xml:space="preserve">
+    <value>Ghilimea neașteptată într-un câmp CSV. Încadrați întregul câmp între ghilimele și dublați ghilimelele din interior ("").</value>
+  </data>
+  <data name="Importing" xml:space="preserve">
+    <value>Se importă…</value>
+  </data>
+  <data name="IncreaseQuantity" xml:space="preserve">
+    <value>Mărește cantitatea</value>
+  </data>
+  <data name="IssuerName" xml:space="preserve">
+    <value>Numele emitentului</value>
+  </data>
+  <data name="Item" xml:space="preserve">
+    <value>Produs</value>
+  </data>
+  <data name="ItemQuantityValidation" xml:space="preserve">
+    <value>Articolul {0}: Introduceți o cantitate între 1 și 999.999.</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>Limbă</value>
+  </data>
+  <data name="LanguageHelp" xml:space="preserve">
+    <value>Se aplică interfeței, etichetelor PDF și formatului datelor și numerelor după salvarea setărilor. Mesajele personalizate sunt păstrate.</value>
+  </data>
+  <data name="Logo" xml:space="preserve">
+    <value>Siglă</value>
+  </data>
+  <data name="LogoHelp" xml:space="preserve">
+    <value>Imagine opțională afișată pe ofertele generate.</value>
+  </data>
+  <data name="LogoImagePath" xml:space="preserve">
+    <value>Calea imaginii siglei</value>
+  </data>
+  <data name="NoCsvSelected" xml:space="preserve">
+    <value>Niciun fișier CSV selectat</value>
+  </data>
+  <data name="NoLogoSelected" xml:space="preserve">
+    <value>Nicio siglă selectată</value>
+  </data>
+  <data name="OfferItemsRequired" xml:space="preserve">
+    <value>Adăugați cel puțin un articol înainte de a genera oferta.</value>
+  </data>
+  <data name="OfferResetStatus" xml:space="preserve">
+    <value>Oferta a fost resetată. Puteți introduce un client nou.</value>
+  </data>
+  <data name="Ok" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="PathSelectionFailed" xml:space="preserve">
+    <value>Calea nu a putut fi selectată</value>
+  </data>
+  <data name="PathSelectionFailedHelp" xml:space="preserve">
+    <value>Selectorul de fișiere nu a putut finaliza selecția. Încercați din nou.</value>
+  </data>
+  <data name="PdfPreviewOpenFailed" xml:space="preserve">
+    <value>Previzualizarea PDF nu a putut fi deschisă</value>
+  </data>
+  <data name="PdfPreviewPlatformUnavailable" xml:space="preserve">
+    <value>Previzualizarea PDF este disponibilă momentan în aplicația pentru Windows. Nu este încă disponibilă pe această platformă.</value>
+  </data>
+  <data name="PdfPreviewUnavailable" xml:space="preserve">
+    <value>Previzualizare PDF indisponibilă</value>
+  </data>
+  <data name="PdfSaveFailed" xml:space="preserve">
+    <value>Fișierul PDF nu a putut fi salvat</value>
+  </data>
+  <data name="PdfSaveFailedHelp" xml:space="preserve">
+    <value>Oferta PDF nu a putut fi generată sau salvată. Verificați dacă imaginea siglei este disponibilă și dacă aveți permisiunea de scriere în dosarul de salvare. Puteți edita în continuare oferta.</value>
+  </data>
+  <data name="PdfSavedPreviewFailedHelp" xml:space="preserve">
+    <value>Fișierul PDF a fost salvat în {0}, dar previzualizarea nu a putut fi deschisă.</value>
+  </data>
+  <data name="PdfViewerInstallHelp" xml:space="preserve">
+    <value>Instalați Microsoft Edge WebView2 Runtime, apoi generați din nou oferta pentru a previzualiza fișierul PDF.</value>
+  </data>
+  <data name="PdfViewerRequired" xml:space="preserve">
+    <value>Este necesar un vizualizator PDF</value>
+  </data>
+  <data name="PhoneNumber" xml:space="preserve">
+    <value>Număr de telefon</value>
+  </data>
+  <data name="Preview_Close" xml:space="preserve">
+    <value>Închide previzualizarea</value>
+  </data>
+  <data name="Preview_LoadError" xml:space="preserve">
+    <value>Previzualizarea PDF nu a putut fi încărcată. Încercați din nou sau închideți previzualizarea.</value>
+  </data>
+  <data name="Preview_Loading" xml:space="preserve">
+    <value>Se încarcă previzualizarea PDF…</value>
+  </data>
+  <data name="Preview_OfferDescription" xml:space="preserve">
+    <value>PDF-ul ofertei generate</value>
+  </data>
+  <data name="Preview_OfferInstructions" xml:space="preserve">
+    <value>Folosiți bara de instrumente PDF pentru a mări, salva sau tipări oferta.</value>
+  </data>
+  <data name="Preview_OfferTitle" xml:space="preserve">
+    <value>Previzualizare ofertă</value>
+  </data>
+  <data name="Preview_Retry" xml:space="preserve">
+    <value>Reîncearcă</value>
+  </data>
+  <data name="Preview_ReturnEditor" xml:space="preserve">
+    <value>Reveniți la editorul ofertei.</value>
+  </data>
+  <data name="Preview_ReturnSettings" xml:space="preserve">
+    <value>Reveniți la setări.</value>
+  </data>
+  <data name="Preview_TemplateDescription" xml:space="preserve">
+    <value>Exemplu de șablon PDF</value>
+  </data>
+  <data name="Preview_TemplateInstructions" xml:space="preserve">
+    <value>Produse demonstrative cu setările dumneavoastră. Folosiți bara de instrumente PDF pentru mărire sau tipărire.</value>
+  </data>
+  <data name="Preview_TemplateTitle" xml:space="preserve">
+    <value>Previzualizare șablon</value>
+  </data>
+  <data name="Preview_ViewerStopped" xml:space="preserve">
+    <value>Vizualizatorul PDF s-a oprit. Închideți previzualizarea și deschideți-o din nou.</value>
+  </data>
+  <data name="PreviousSettingsUnchanged" xml:space="preserve">
+    <value>
+
+Catalogul și setările anterioare au rămas neschimbate.</value>
+  </data>
+  <data name="PrimaryColor" xml:space="preserve">
+    <value>Culoare principală</value>
+  </data>
+  <data name="ProductAdded" xml:space="preserve">
+    <value>S-a adăugat {0}.</value>
+  </data>
+  <data name="ProductColor" xml:space="preserve">
+    <value>Culoarea produsului</value>
+  </data>
+  <data name="ProductOrService" xml:space="preserve">
+    <value>Produs sau serviciu</value>
+  </data>
+  <data name="ProductRemoved" xml:space="preserve">
+    <value>S-a eliminat {0}.</value>
+  </data>
+  <data name="ProductSize" xml:space="preserve">
+    <value>Mărimea produsului</value>
+  </data>
+  <data name="Quantity" xml:space="preserve">
+    <value>Cantitate</value>
+  </data>
+  <data name="QuantityValidation" xml:space="preserve">
+    <value>Introduceți o cantitate între 1 și 999.999.</value>
+  </data>
+  <data name="RemoveItem" xml:space="preserve">
+    <value>Elimină produsul</value>
+  </data>
+  <data name="RemoveLogo" xml:space="preserve">
+    <value>Elimină sigla</value>
+  </data>
+  <data name="RemoveProductDescription" xml:space="preserve">
+    <value>Elimină {0}</value>
+  </data>
+  <data name="Reset" xml:space="preserve">
+    <value>Resetează</value>
+  </data>
+  <data name="SaveDirectory" xml:space="preserve">
+    <value>Dosar de salvare</value>
+  </data>
+  <data name="SaveDirectoryHelp" xml:space="preserve">
+    <value>Fișierele PDF generate sunt salvate în acest dosar. Dosarul este creat când este necesar.</value>
+  </data>
+  <data name="SaveSettings" xml:space="preserve">
+    <value>Salvează setările</value>
+  </data>
+  <data name="SavedCatalogReadFailed" xml:space="preserve">
+    <value>Fișierul CSV salvat nu a putut fi citit. Deschideți Setări și selectați un fișier CSV disponibil.</value>
+  </data>
+  <data name="SecondaryColor" xml:space="preserve">
+    <value>Culoare secundară</value>
+  </data>
+  <data name="SelectCategory" xml:space="preserve">
+    <value>Selectați categoria</value>
+  </data>
+  <data name="SelectColor" xml:space="preserve">
+    <value>Selectați culoarea</value>
+  </data>
+  <data name="SelectItem" xml:space="preserve">
+    <value>Selectați produsul</value>
+  </data>
+  <data name="SelectProductToAdd" xml:space="preserve">
+    <value>Selectați o categorie și un articol de adăugat.</value>
+  </data>
+  <data name="SelectSize" xml:space="preserve">
+    <value>Selectați mărimea</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Setări</value>
+  </data>
+  <data name="SettingsLoadFailed" xml:space="preserve">
+    <value>Fișierul settings.json nu a putut fi citit sau creat. Se folosesc setările implicite; deschideți Setări pentru a salva din nou.</value>
+  </data>
+  <data name="SettingsNotSaved" xml:space="preserve">
+    <value>Setările nu au fost salvate</value>
+  </data>
+  <data name="SettingsSaveFailedHelp" xml:space="preserve">
+    <value>Fișierul settings.json nu a putut fi scris. Verificați spațiul disponibil și încercați din nou. Catalogul anterior a rămas neschimbat.</value>
+  </data>
+  <data name="ShowFirstColumns" xml:space="preserve">
+    <value>Afișează primele coloane ale tabelului</value>
+  </data>
+  <data name="ShowLastColumns" xml:space="preserve">
+    <value>Afișează ultimele coloane ale tabelului</value>
+  </data>
+  <data name="Size" xml:space="preserve">
+    <value>Mărime</value>
+  </data>
+  <data name="StatusCatalogImported" xml:space="preserve">
+    <value>Au fost importate {0} produse.</value>
+  </data>
+  <data name="StatusCatalogLoaded" xml:space="preserve">
+    <value>Au fost încărcate {0} produse.</value>
+  </data>
+  <data name="StatusFileAccessNotSaved" xml:space="preserve">
+    <value>Setările au fost salvate, dar accesul la căile selectate nu a putut fi memorat.</value>
+  </data>
+  <data name="StatusGeneratingPdf" xml:space="preserve">
+    <value>Se generează oferta PDF…</value>
+  </data>
+  <data name="StatusLoadingCatalog" xml:space="preserve">
+    <value>Se încarcă catalogul de produse…</value>
+  </data>
+  <data name="StatusPdfSaveFailed" xml:space="preserve">
+    <value>Oferta PDF nu a putut fi generată sau salvată. Verificați sigla și dosarul de salvare din Setări.</value>
+  </data>
+  <data name="StatusPdfSaved" xml:space="preserve">
+    <value>Oferta PDF a fost salvată în {0}</value>
+  </data>
+  <data name="StatusReady" xml:space="preserve">
+    <value>Gata</value>
+  </data>
+  <data name="StatusSavedCatalogUnavailable" xml:space="preserve">
+    <value>Fișierul CSV salvat nu a putut fi încărcat. Deschideți Setări pentru a-l selecta și importa din nou.</value>
+  </data>
+  <data name="StatusSettingsSaved" xml:space="preserve">
+    <value>Setările au fost salvate.</value>
+  </data>
+  <data name="StreetAndNumber" xml:space="preserve">
+    <value>Stradă și număr</value>
+  </data>
+  <data name="TemplateColors" xml:space="preserve">
+    <value>Culorile șablonului</value>
+  </data>
+  <data name="TemplateColorsHelp" xml:space="preserve">
+    <value>Principală: titluri și bare. Secundară: detalii și accente. Text: conținutul principal. Se aplică tuturor șabloanelor.</value>
+  </data>
+  <data name="TemplatePreviewFailed" xml:space="preserve">
+    <value>Șablonul nu a putut fi previzualizat</value>
+  </data>
+  <data name="TemplatePreviewFailedHelp" xml:space="preserve">
+    <value>Verificați dacă sigla selectată este disponibilă și dacă Microsoft Edge WebView2 Runtime este instalat, apoi încercați din nou.</value>
+  </data>
+  <data name="Template_ClassicDescription" xml:space="preserve">
+    <value>Antet tradițional, cu un antet de tabel și o bară de total bleumarin.</value>
+  </data>
+  <data name="Template_ClassicName" xml:space="preserve">
+    <value>Clasic</value>
+  </data>
+  <data name="Template_MinimalDescription" xml:space="preserve">
+    <value>Antet compact, linii fine de tabel și totaluri discrete.</value>
+  </data>
+  <data name="Template_MinimalName" xml:space="preserve">
+    <value>Minimalist</value>
+  </data>
+  <data name="Template_ModernDescription" xml:space="preserve">
+    <value>Bandă de titlu accentuată, panou pentru destinatar și fișe de produse spațioase.</value>
+  </data>
+  <data name="Template_ModernName" xml:space="preserve">
+    <value>Modern</value>
+  </data>
+  <data name="Template_PreviewButton" xml:space="preserve">
+    <value>Previzualizează PDF-ul cu datele mele</value>
+  </data>
+  <data name="Template_PreviewGenerating" xml:space="preserve">
+    <value>Se generează previzualizarea…</value>
+  </data>
+  <data name="Template_PreviewHint" xml:space="preserve">
+    <value>Previzualizați produse demonstrative folosind culorile șablonului, datele firmei, limba, mesajul și cota TVA din setările nesalvate.</value>
+  </data>
+  <data name="Template_PreviewNote" xml:space="preserve">
+    <value>Previzualizarea PDF folosește produse demonstrative și setările curente. Nu salvează o ofertă.</value>
+  </data>
+  <data name="Template_PreviewWindowsOnly" xml:space="preserve">
+    <value>Previzualizările PDF complete, cu datele dumneavoastră, sunt disponibile în aplicația pentru Windows.</value>
+  </data>
+  <data name="Template_SampleDescription" xml:space="preserve">
+    <value>Exemplu de ofertă cu șablonul {0}. {1}</value>
+  </data>
+  <data name="Template_SampleNote" xml:space="preserve">
+    <value>Exemplul de aspect este afișat în culorile implicite. Salvați setările pentru a folosi șablonul și culorile selectate în ofertele noi.</value>
+  </data>
+  <data name="Template_Title" xml:space="preserve">
+    <value>Șablon PDF</value>
+  </data>
+  <data name="TextColor" xml:space="preserve">
+    <value>Culoarea textului</value>
+  </data>
+  <data name="TotalHeader" xml:space="preserve">
+    <value>Total (RON)
+cu TVA</value>
+  </data>
+  <data name="UnitPriceHeader" xml:space="preserve">
+    <value>Preț unitar (RON)
+fără TVA</value>
+  </data>
+  <data name="UnspecifiedAttribute" xml:space="preserve">
+    <value>— (nespecificat)</value>
+  </data>
+  <data name="UnspecifiedAttributeNumbered" xml:space="preserve">
+    <value>— (nespecificat {0})</value>
+  </data>
+  <data name="VatColumnHeader" xml:space="preserve">
+    <value>TVA {0}%
+(RON)</value>
+  </data>
+  <data name="VatNumber" xml:space="preserve">
+    <value>Cod de TVA</value>
+  </data>
+  <data name="VatPercentage" xml:space="preserve">
+    <value>Procent TVA</value>
+  </data>
+  <data name="VatPercentageHelp" xml:space="preserve">
+    <value>Se folosește pentru calcularea prețurilor fără TVA din catalog pornind de la prețurile CSV. Pozițiile existente păstrează prețurile unitare fără TVA și recalculează TVA-ul. Folosiți 0 pentru lipsa TVA-ului.</value>
+  </data>
+  <data name="VatPercentageLabel" xml:space="preserve">
+    <value>Procent TVA (%)</value>
+  </data>
+  <data name="VatRateValidation" xml:space="preserve">
+    <value>Introduceți un procent TVA între 0 și 100, cu cel mult două zecimale.</value>
+  </data>
+</root>

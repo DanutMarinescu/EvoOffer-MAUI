@@ -18,6 +18,15 @@ void Check(bool condition, string description)
     checks++;
 }
 
+LocalizationTests.Run(Check);
+// Existing English-message checks run with an explicit UI language, independent
+// of the machine culture. LocalizationTests covers both supported languages.
+LocalizationService.SetLanguage(AppSettings.English);
+CatalogImportTests.Run(Check);
+ImportedOfferTests.Run(Check);
+VariantSelectionTests.Run(Check);
+DimensionVariantTests.Run(Check);
+
 foreach (var culture in new[] { "en-US", "ro-RO" })
 {
     CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture);
@@ -72,24 +81,54 @@ rounded.Quantity = 1.1m;
 Check(rounded.NetTotal == 0.06m && rounded.VatAmount == 0.01m && rounded.Total == 0.07m,
     "Rounded net and VAT add up to the displayed total");
 
-var vm = new MainViewModel(21m);
-Check(vm.Items.All(item => item.VatRate == 21m) && vm.GrandTotal == 4416.5m, "Initial offer uses saved rate");
+var emptyVm = new MainViewModel(21m, ProductCatalog.Empty);
+Check(emptyVm.Categories.Count == 0 && emptyVm.AvailableItems.Count == 0
+    && emptyVm.SelectedCategory is null && emptyVm.SelectedItem is null
+    && emptyVm.Items.Count == 0 && emptyVm.ClientName == string.Empty,
+    "A fresh offer starts without placeholder products, lines or client data");
+emptyVm.AddCommand.Execute(null);
+Check(emptyVm.Items.Count == 0, "An empty catalog cannot add a placeholder product");
+
+var offerCatalog = CatalogCsvImporter.Import(new StringReader("""
+    Denumire Produs,Pret,Categorie / Categorii
+    Stejar Natur 14 mm,217.80,Parchet lemn masiv
+    Stejar Rustic 13 mm,181.50,Parchet stratificat
+    Plintă MDF albă,30.25,Accesorii
+    Montaj parchet,48.40,Montaj
+    """), 21m);
+var vm = new MainViewModel(21m, offerCatalog);
+decimal[] initialQuantities = [10m, 5m, 12m, 20m];
+for (var index = 0; index < vm.Categories.Count; index++)
+{
+    vm.SelectedCategory = vm.Categories[index];
+    vm.NewQuantity = initialQuantities[index];
+    vm.AddCommand.Execute(null);
+}
+vm.SelectedCategory = vm.Categories.First();
+vm.NewQuantity = 1m;
+Check(vm.Items.All(item => item.VatRate == 21m) && vm.GrandTotal == 4416.5m, "Imported products create an offer at the saved rate");
+var originalSelectedItem = vm.SelectedItem;
 var totalChanges = 0;
 vm.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(vm.GrandTotalText)) totalChanges++; };
 vm.VatRate = 9.5m;
 Check(vm.Items.All(item => item.VatRate == 9.5m) && vm.GrandTotal == 3996.75m && totalChanges > 0,
     "Changing settings recalculates existing items and the footer");
 Check(vm.VatHeaderText.Contains("9.5%"), "Header displays active rate");
+Check(vm.SelectedItem is { } repricedItem && !ReferenceEquals(repricedItem, originalSelectedItem)
+    && repricedItem.Name == originalSelectedItem!.Name && repricedItem.PriceIncludingVat == 217.80m
+    && repricedItem.UnitPrice == 217.80m / 1.095m && originalSelectedItem.UnitPrice == 180m
+    && ReferenceEquals(CatalogStore.Current, vm.Catalog),
+    "VAT changes reprice and publish immutable catalog snapshots while preserving product selection and gross prices");
 vm.AddCommand.Execute(null);
-Check(vm.Items.Last().VatRate == 9.5m && vm.Items.Last().Total == 197.1m, "Added items use current rate");
+Check(vm.Items.Last().VatRate == 9.5m && vm.Items.Last().Total == 217.80m, "Added items use the current catalog net price and VAT rate");
 vm.Items.Last().Quantity = 2m;
-Check(vm.GrandTotal == 4390.95m, "Editing quantity updates grand total");
+Check(vm.GrandTotal == 4432.35m, "Editing quantity updates grand total");
 vm.DeleteCommand.Execute(vm.Items.Last());
 Check(vm.GrandTotal == 3996.75m, "Deleting item updates grand total");
 vm.ResetCommand.Execute(null);
 Check(vm.GrandTotal == 0m && vm.VatRate == 9.5m, "Reset preserves VAT settings");
 vm.AddCommand.Execute(null);
-Check(vm.Items.Single().Total == 197.1m, "Offer after reset uses saved rate");
+Check(vm.Items.Single().Total == 217.80m, "Offer after reset uses the imported gross price and saved VAT rate");
 vm.ClientName = "Client";
 vm.Items.Single().QuantityText = "invalid";
 Check(!vm.TryValidateOffer(out _), "Invalid quantity blocks preview");
@@ -101,6 +140,59 @@ foreach (var invalid in new[] { -1m, 101m, 2.345m })
     Check(rejected && vm.VatRate == 9.5m, "Invalid rates cannot enter the model");
 }
 
+var hierarchyCatalog = CatalogCsvImporter.Import(new StringReader("""
+    Denumire Produs,Pret,Categorie / Categorii
+    Multi-path item,121,A > B > C > D | E > F | G
+    Shared under A,242,A > Shared
+    Shared under E,363,E > Shared
+    Overlapping paths,12.10,A > B | A > C
+    """), 21m);
+var hierarchyVm = new MainViewModel(21m, hierarchyCatalog);
+foreach (var path in new[] { "A", "A > B", "A > B > C", "A > B > C > D", "E", "E > F", "G" })
+{
+    hierarchyVm.SelectedCategory = hierarchyVm.Categories.Single(category => category.Path == path);
+    Check(hierarchyVm.AvailableItems.Count(item => item.Name == "Multi-path item") == 1,
+        $"Products are available exactly once under the ancestor or leaf category {path}");
+}
+hierarchyVm.SelectedCategory = hierarchyVm.Categories.Single(category => category.Path == "A");
+Check(hierarchyVm.AvailableItems.Count == 3 && hierarchyVm.AvailableItems.Count(item => item.Name == "Overlapping paths") == 1,
+    "Matching multiple paths beneath the same root does not duplicate a product");
+hierarchyVm.SelectedCategory = hierarchyVm.Categories.Single(category => category.Path == "A > Shared");
+Check(hierarchyVm.AvailableItems.Single().Name == "Shared under A",
+    "A repeated subcategory name filters within its own parent path");
+hierarchyVm.SelectedCategory = hierarchyVm.Categories.Single(category => category.Path == "E > Shared");
+Check(hierarchyVm.AvailableItems.Single().Name == "Shared under E",
+    "An identically named subcategory under another root remains separate");
+hierarchyVm.AddCommand.Execute(null);
+var retainedOfferLine = hierarchyVm.Items.Single();
+hierarchyVm.VatRate = 0m;
+Check(hierarchyVm.SelectedCategory?.Path == "E > Shared" && hierarchyVm.SelectedItem?.Name == "Shared under E"
+    && hierarchyVm.SelectedItem.UnitPrice == 363m && retainedOfferLine.UnitPrice == 300m
+    && retainedOfferLine.VatRate == 0m,
+    "VAT changes preserve category selection, recalculate imported net prices and retain existing offer line snapshots");
+
+var staleItem = hierarchyVm.SelectedItem;
+var catalogChanges = new HashSet<string?>();
+hierarchyVm.PropertyChanged += (_, e) => catalogChanges.Add(e.PropertyName);
+hierarchyVm.ApplyCatalog(CatalogCsvImporter.Import(new StringReader("""
+    Denumire Produs,Pret,Categorie / Categorii
+    Replacement item,121,Replacement > Only
+    """), 21m));
+Check(hierarchyVm.SelectedCategory?.Path == "Replacement" && hierarchyVm.SelectedItem?.Name == "Replacement item"
+    && hierarchyVm.AvailableItems.Single().UnitPrice == 121m && hierarchyVm.Categories.Count == 2
+    && ReferenceEquals(CatalogStore.Current, hierarchyVm.Catalog)
+    && new[] { "Catalog", "Categories", "AvailableItems", "SelectedCategory", "SelectedItem" }.All(catalogChanges.Contains),
+    "Replacing an import refreshes all dropdown bindings and normalizes prices to the active VAT rate");
+Check(ReferenceEquals(hierarchyVm.Items.Single(), retainedOfferLine), "Importing a replacement preserves the current offer");
+hierarchyVm.SelectedItem = staleItem;
+hierarchyVm.AddCommand.Execute(null);
+Check(hierarchyVm.Items.Count == 1, "A stale product from the previous import cannot be added");
+hierarchyVm.ApplyCatalog(ProductCatalog.Empty);
+Check(hierarchyVm.Categories.Count == 0 && hierarchyVm.AvailableItems.Count == 0
+    && hierarchyVm.SelectedCategory is null && hierarchyVm.SelectedItem is null && hierarchyVm.Items.Count == 1,
+    "Clearing the catalog clears dropdown selections without discarding existing offer lines");
+CatalogStore.Replace(ProductCatalog.Empty);
+
 var settingsDirectory = Path.Combine(Path.GetTempPath(), "EvoOffer-settings-tests-" + Guid.NewGuid());
 try
 {
@@ -108,17 +200,19 @@ try
     var defaults = store.Load();
     Check(defaults.Language == "Română" && defaults.IssuerName == string.Empty,
         "First launch defaults to Romanian and an empty issuer");
-    Check(defaults.LogoPath is null && defaults.SaveDirectory == AppSettings.DefaultSaveDirectory
+    Check(defaults.LogoPath is null && defaults.DataFilePath is null && defaults.SaveDirectory == AppSettings.DefaultSaveDirectory
         && Path.IsPathFullyQualified(defaults.SaveDirectory),
-        "First launch has no logo and a usable absolute PDF output directory");
+        "First launch has no logo or CSV source and a usable absolute PDF output directory");
     Check(File.Exists(store.FilePath), "First launch creates the config file");
 
     var selectedLogoPath = Path.Combine(settingsDirectory, "Logo assets", " logo final.png ");
+    var selectedDataPath = Path.Combine(settingsDirectory, "Catalog data", " products final.csv ");
     var selectedSaveDirectory = Path.Combine(settingsDirectory, "Oferte PDF ");
     store.Save(new AppSettings
     {
         IssuerName = "Ștefan & Asociații",
         LogoPath = selectedLogoPath,
+        DataFilePath = selectedDataPath,
         SaveDirectory = selectedSaveDirectory,
         Email = "  office+offers@example.ro  ",
         PhoneNumber = "00722123456",
@@ -137,10 +231,12 @@ try
         && restored.AddressLine1 == "Strada Ștefan cel Mare 12" && restored.AddressLine2 == "Etaj 2, București, 010101"
         && restored.VatNumber == "00123456789012345678901234567890",
         "Contact data survives reload, trims e-mail whitespace, and preserves long identifiers and leading zeros");
-    Check(restored.LogoPath == selectedLogoPath && restored.SaveDirectory == selectedSaveDirectory,
-        "Selected logo and PDF directory paths survive reload without altering valid path whitespace");
+    Check(restored.LogoPath == selectedLogoPath && restored.DataFilePath == selectedDataPath
+        && restored.SaveDirectory == selectedSaveDirectory,
+        "Selected logo, CSV and PDF directory paths survive reload without altering valid path whitespace");
     restored.Language = AppSettings.Romanian;
     restored.LogoPath = null;
+    restored.DataFilePath = null;
     restored.IssuerName = string.Empty;
     restored.DefaultMessage = string.Empty;
     restored.Email = string.Empty;
@@ -155,8 +251,8 @@ try
     Check(restored.Email == string.Empty && restored.PhoneNumber == string.Empty
         && restored.AddressLine1 == string.Empty && restored.AddressLine2 == string.Empty && restored.VatNumber == string.Empty,
         "Clearing contact data is persisted");
-    Check(restored.LogoPath is null && restored.SaveDirectory == selectedSaveDirectory,
-        "Clearing the optional logo is persisted without resetting the selected PDF directory");
+    Check(restored.LogoPath is null && restored.DataFilePath is null && restored.SaveDirectory == selectedSaveDirectory,
+        "Clearing the optional logo and CSV source is persisted without resetting the selected PDF directory");
 
     // A failed write must leave the previous config usable.
     Directory.CreateDirectory(store.FilePath + ".tmp");
@@ -174,24 +270,25 @@ try
     Check(restored.Email == string.Empty && restored.PhoneNumber == string.Empty
         && restored.AddressLine1 == string.Empty && restored.AddressLine2 == string.Empty && restored.VatNumber == string.Empty,
         "Existing settings files load with empty contact fields");
-    Check(restored.LogoPath is null && restored.SaveDirectory == AppSettings.DefaultSaveDirectory,
-        "Settings from older versions receive the optional logo and default PDF directory");
+    Check(restored.LogoPath is null && restored.DataFilePath is null && restored.SaveDirectory == AppSettings.DefaultSaveDirectory,
+        "Settings from older versions receive absent logo and CSV paths and the default PDF directory");
     File.WriteAllText(store.FilePath, "{\"IssuerName\":null,\"Email\":null,\"PhoneNumber\":null,\"AddressLine1\":null,\"AddressLine2\":null,\"VatNumber\":null,\"Language\":\"unsupported\",\"VatRate\":101,\"DefaultMessage\":null}");
     restored = store.Load();
     Check(restored.Language == AppSettings.Romanian && restored.VatRate == VatRateValue.Default
-        && restored.IssuerName == string.Empty && restored.DefaultMessage == MainViewModel.DefaultCustomText,
+        && restored.IssuerName == string.Empty && restored.DefaultMessage == MainViewModel.GetDefaultMessage(AppSettings.Romanian),
         "Invalid config values fall back to valid defaults");
     Check(restored.Email == string.Empty && restored.PhoneNumber == string.Empty
         && restored.AddressLine1 == string.Empty && restored.AddressLine2 == string.Empty && restored.VatNumber == string.Empty,
         "Null contact fields normalize to empty values");
 
     foreach (var config in new[]
-        { "{\"LogoPath\":null,\"SaveDirectory\":null}", "{\"LogoPath\":\"  \",\"SaveDirectory\":\"  \"}" })
+        { "{\"LogoPath\":null,\"DataFilePath\":null,\"SaveDirectory\":null}",
+          "{\"LogoPath\":\"  \",\"DataFilePath\":\"  \",\"SaveDirectory\":\"  \"}" })
     {
         File.WriteAllText(store.FilePath, config);
         restored = store.Load();
-        Check(restored.LogoPath is null && restored.SaveDirectory == AppSettings.DefaultSaveDirectory,
-            "Missing or blank file settings restore an absent logo and the default PDF directory");
+        Check(restored.LogoPath is null && restored.DataFilePath is null && restored.SaveDirectory == AppSettings.DefaultSaveDirectory,
+            "Missing or blank file settings restore absent logo and CSV paths and the default PDF directory");
     }
 
     File.WriteAllText(store.FilePath, "{broken");
@@ -292,6 +389,9 @@ using (var invalidOutput = new MemoryStream())
 }
 
 QuestPDF.Settings.License = LicenseType.Evaluation;
+OfferPdfTemplateTests.Run(Check);
+TemplateColorTests.Run(Check);
+OfferPdfWrappingTests.Run(Check);
 Check(pdfService.IsSupported, "The desktop regression host supports the QuestPDF renderer");
 var pdfBytes = pdfService.Generate(pdfOffer);
 var pdfText = Encoding.Latin1.GetString(pdfBytes);
@@ -371,7 +471,7 @@ Check(Regex.Matches(longPdfText, @"/Type\s*/Page\b").Count > 1
     && longPdfText.TrimEnd().EndsWith("%%EOF", StringComparison.Ordinal),
     "Long Romanian offers render across multiple pages with a footer and page numbering");
 
-var templateSamples = OfferPdfSamples.Create(pdfDefaults);
+var templateSamples = OfferPdfSamples.Create(pdfDefaults).Concat(TemplateColorTests.CreateSamples(pdfDefaults)).ToArray();
 var renderedSamples = new Dictionary<string, byte[]>();
 foreach (var sample in templateSamples)
 {

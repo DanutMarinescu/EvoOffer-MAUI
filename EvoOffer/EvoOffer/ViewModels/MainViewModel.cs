@@ -1,50 +1,46 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.Globalization;
 using System.Windows.Input;
 using EvoOffer.Models;
+using EvoOffer.Services;
 
 namespace EvoOffer.ViewModels;
 
 public sealed class MainViewModel : ObservableObject
 {
-    public const string DefaultCustomText = "Thank you for your interest in our products and services. Below you will find our best offer tailored to your needs. If you have any questions, please do not hesitate to contact us.";
+    public static string DefaultCustomText => LocalizationService.Get("DefaultOfferMessage");
 
-    private readonly CatalogItem[] _catalog =
-    [
-        new("Parchet lemn masiv", "Stejar Natur 14 mm", 180m),
-        new("Parchet stratificat", "Stejar Rustic 13 mm", 150m),
-        new("Accesorii", "Plintă MDF albă", 25m),
-        new("Montaj", "Montaj parchet", 40m)
-    ];
+    public static string GetDefaultMessage(string? language) => LocalizationService.Get("DefaultOfferMessage", language);
 
+    public static bool IsDefaultMessage(string? value) =>
+        value == GetDefaultMessage(AppSettings.Romanian) || value == GetDefaultMessage(AppSettings.English);
+
+    private ProductCatalog _catalog = ProductCatalog.Empty;
+    private IReadOnlyList<CatalogItem> _availableItems = Array.Empty<CatalogItem>();
     private readonly HashSet<OfferLineItem> _observedItems = [];
-    private string _clientName = "ACME SRL";
+    private string _clientName = string.Empty;
     private string _customText = DefaultCustomText;
-    private string? _selectedCategory;
+    private CatalogCategory? _selectedCategory;
     private CatalogItem? _selectedItem;
     private decimal _newQuantity = 1m;
     private string _newQuantityText = "1";
     private bool _newQuantityHasError;
-    private string _status = "Ready";
+    private string _status = LocalizationService.Get("StatusReady");
+    private string? _statusKey = "StatusReady";
+    private object[] _statusArguments = [];
     private decimal _vatRate;
 
-    public MainViewModel(decimal vatRate = VatRateValue.Default)
+    public MainViewModel(decimal vatRate = VatRateValue.Default, ProductCatalog? catalog = null)
     {
         if (!VatRateValue.IsValid(vatRate))
             throw new ArgumentOutOfRangeException(nameof(vatRate));
         _vatRate = vatRate;
-        Categories = new ObservableCollection<string>(_catalog.Select(item => item.Category).Distinct());
         AddCommand = new RelayCommand(_ => AddItem());
         DeleteCommand = new RelayCommand(parameter => DeleteItem(parameter as OfferLineItem));
         ResetCommand = new RelayCommand(_ => Reset());
         Items.CollectionChanged += ItemsCollectionChanged;
-        SelectedCategory = Categories.FirstOrDefault();
-
-        decimal[] initialQuantities = [10m, 5m, 12m, 20m];
-        for (var index = 0; index < _catalog.Length; index++)
-            Items.Add(new OfferLineItem(index + 1, _catalog[index], initialQuantities[index], VatRate));
+        RefreshCatalog((catalog ?? CatalogStore.Current).WithVatRate(vatRate), preserveSelection: false);
     }
 
     public string DefaultMessage { get; set; } = DefaultCustomText;
@@ -61,11 +57,13 @@ public sealed class MainViewModel : ObservableObject
 
             foreach (var item in Items)
                 item.VatRate = value;
+            RefreshCatalog(Catalog.WithVatRate(value), preserveSelection: true);
+            CatalogStore.Replace(Catalog);
             OnPropertyChanged(nameof(VatHeaderText));
         }
     }
 
-    public string VatHeaderText => $"VAT {VatRateValue.Format(VatRate)}%\n(RON)";
+    public string VatHeaderText => LocalizationService.Format("VatColumnHeader", VatRateValue.Format(VatRate));
 
     public string ClientName
     {
@@ -79,22 +77,21 @@ public sealed class MainViewModel : ObservableObject
         set => SetProperty(ref _customText, value ?? string.Empty);
     }
 
-    public ObservableCollection<string> Categories { get; }
-    public ObservableCollection<CatalogItem> AvailableItems { get; } = [];
+    public ProductCatalog Catalog => _catalog;
+    public IReadOnlyList<CatalogCategory> Categories => Catalog.Categories;
+    public IReadOnlyList<CatalogItem> AvailableItems => _availableItems;
     public ObservableCollection<OfferLineItem> Items { get; } = [];
 
-    public string? SelectedCategory
+    public CatalogCategory? SelectedCategory
     {
         get => _selectedCategory;
         set
         {
-            if (!SetProperty(ref _selectedCategory, value))
+            var category = value is null ? null : Categories.FirstOrDefault(candidate => candidate.Path == value.Path);
+            if (!SetProperty(ref _selectedCategory, category))
                 return;
 
-            AvailableItems.Clear();
-            foreach (var item in _catalog.Where(item => item.Category == value))
-                AvailableItems.Add(item);
-            SelectedItem = AvailableItems.FirstOrDefault();
+            RefreshAvailableItems();
         }
     }
 
@@ -142,32 +139,105 @@ public sealed class MainViewModel : ObservableObject
     public string Status
     {
         get => _status;
-        set => SetProperty(ref _status, value);
+        set
+        {
+            _statusKey = null;
+            _statusArguments = [];
+            SetProperty(ref _status, value ?? string.Empty);
+        }
     }
 
     public decimal GrandTotal => Items.Sum(item => item.Total);
-    public string GrandTotalText => GrandTotal.ToString("N2", CultureInfo.InvariantCulture);
+    public string GrandTotalText => GrandTotal.ToString("N2", LocalizationService.Culture);
+    public string GrandTotalSummary => LocalizationService.Format("GrandTotalSummary", GrandTotalText);
     public ICommand AddCommand { get; }
     public ICommand DeleteCommand { get; }
     public ICommand ResetCommand { get; }
 
     public void AdjustNewQuantity(int amount) => NewQuantity += amount;
 
+    public void SetStatus(string key, params object[] args)
+    {
+        _statusKey = key;
+        _statusArguments = args;
+        SetProperty(ref _status, LocalizationService.Format(key, args), nameof(Status));
+    }
+
+    public void RefreshLocalization()
+    {
+        if (IsDefaultMessage(DefaultMessage))
+            DefaultMessage = DefaultCustomText;
+        if (IsDefaultMessage(CustomText))
+            CustomText = DefaultCustomText;
+
+        // Keep invalid input available for correction. Valid quantities retain
+        // their numeric value when the decimal separator changes.
+        if (!NewQuantityHasError)
+            SetProperty(ref _newQuantityText, QuantityValue.Format(NewQuantity), nameof(NewQuantityText));
+        foreach (var item in Items)
+            item.RefreshLocalization();
+
+        OnPropertyChanged(nameof(DefaultMessage));
+        OnPropertyChanged(nameof(VatHeaderText));
+        OnPropertyChanged(nameof(NewQuantityValidationMessage));
+        NotifyOfferTotals();
+        if (_statusKey is not null)
+            SetProperty(ref _status, LocalizationService.Format(_statusKey, _statusArguments), nameof(Status));
+    }
+
+    public void ApplyCatalog(ProductCatalog catalog)
+    {
+        ArgumentNullException.ThrowIfNull(catalog);
+        RefreshCatalog(catalog.WithVatRate(VatRate), preserveSelection: false);
+        CatalogStore.Replace(Catalog);
+    }
+
+    private void RefreshCatalog(ProductCatalog catalog, bool preserveSelection)
+    {
+        var previousCategoryPath = preserveSelection ? SelectedCategory?.Path : null;
+        var previousItemIndex = preserveSelection && SelectedItem is not null
+            ? Catalog.Items.ToList().FindIndex(item => ReferenceEquals(item, SelectedItem))
+            : -1;
+
+        _catalog = catalog;
+        OnPropertyChanged(nameof(Catalog));
+        OnPropertyChanged(nameof(Categories));
+        _selectedCategory = Categories.FirstOrDefault(category => category.Path == previousCategoryPath)
+            ?? Categories.FirstOrDefault();
+        OnPropertyChanged(nameof(SelectedCategory));
+
+        var preferredItem = previousItemIndex >= 0 && previousItemIndex < Catalog.Items.Count
+            ? Catalog.Items[previousItemIndex]
+            : null;
+        RefreshAvailableItems(preferredItem);
+    }
+
+    private void RefreshAvailableItems(CatalogItem? preferredItem = null)
+    {
+        _availableItems = SelectedCategory is { } category
+            ? Array.AsReadOnly(Catalog.Items.Where(item => item.BelongsTo(category)).ToArray())
+            : Array.Empty<CatalogItem>();
+        OnPropertyChanged(nameof(AvailableItems));
+        SelectedItem = preferredItem is not null && AvailableItems.Contains(preferredItem)
+            ? preferredItem
+            : AvailableItems.FirstOrDefault();
+    }
+
     public bool TryValidateOffer(out string message)
     {
         if (string.IsNullOrWhiteSpace(ClientName))
-            message = "Enter a client name before generating an offer.";
+            SetStatus("ClientNameRequired");
         else if (Items.Count == 0)
-            message = "Add at least one item before generating an offer.";
+            SetStatus("OfferItemsRequired");
         else if (Items.FirstOrDefault(item => item.HasQuantityError) is { } invalidItem)
-            message = $"Item {invalidItem.Number}: {QuantityValue.ValidationMessage}";
+            SetStatus("ItemQuantityValidation", invalidItem.Number);
         else
         {
             message = string.Empty;
             return true;
         }
 
-        Status = message;
+        message = Status;
         return false;
     }
 
@@ -175,24 +245,30 @@ public sealed class MainViewModel : ObservableObject
     {
         if (SelectedItem is null || !AvailableItems.Contains(SelectedItem))
         {
-            Status = "Select a category and an item to add.";
+            SetStatus("SelectProductToAdd");
             return;
         }
 
         if (!QuantityValue.TryParse(NewQuantityText, out var quantity))
         {
-            Status = QuantityValue.ValidationMessage;
+            SetStatus("QuantityValidation");
+            return;
+        }
+
+        if (SelectedItem.HasAmbiguousVariants)
+        {
+            SetStatus("AmbiguousProductStatus", SelectedItem.Name);
             return;
         }
 
         Items.Add(new OfferLineItem(Items.Count + 1, SelectedItem, quantity, VatRate));
-        Status = $"Added {SelectedItem.Name}.";
+        SetStatus("ProductAdded", SelectedItem.Name);
     }
 
     private void DeleteItem(OfferLineItem? item)
     {
         if (item is not null && Items.Remove(item))
-            Status = $"Removed {item.Name}.";
+            SetStatus("ProductRemoved", item.Name);
     }
 
     private void Reset()
@@ -203,7 +279,7 @@ public sealed class MainViewModel : ObservableObject
         SelectedCategory = Categories.FirstOrDefault();
         SelectedItem = AvailableItems.FirstOrDefault();
         NewQuantity = 1m;
-        Status = "Offer reset. Ready for a new client.";
+        SetStatus("OfferResetStatus");
     }
 
     private void ItemsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -265,9 +341,10 @@ public sealed class MainViewModel : ObservableObject
         if (e.PropertyName == nameof(OfferLineItem.HasQuantityError))
         {
             OnPropertyChanged(nameof(HasValidationErrors));
-            Status = Items.FirstOrDefault(item => item.HasQuantityError) is { } invalidItem
-                ? $"Item {invalidItem.Number}: {QuantityValue.ValidationMessage}"
-                : "Ready";
+            if (Items.FirstOrDefault(item => item.HasQuantityError) is { } invalidItem)
+                SetStatus("ItemQuantityValidation", invalidItem.Number);
+            else
+                SetStatus("StatusReady");
         }
     }
 
@@ -275,5 +352,6 @@ public sealed class MainViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(GrandTotal));
         OnPropertyChanged(nameof(GrandTotalText));
+        OnPropertyChanged(nameof(GrandTotalSummary));
     }
 }

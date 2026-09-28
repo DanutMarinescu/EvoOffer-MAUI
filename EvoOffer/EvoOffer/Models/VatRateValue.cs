@@ -1,16 +1,17 @@
 using System.Globalization;
+using EvoOffer.Services;
 
 namespace EvoOffer.Models;
 
 public static class VatRateValue
 {
     public const decimal Default = 0m;
-    public const string ValidationMessage = "Enter a VAT percentage from 0 to 100, with up to two decimal places.";
+    public static string ValidationMessage => LocalizationService.Get("VatRateValidation");
 
     public static bool IsValid(decimal value) =>
         value >= 0m && value <= 100m && decimal.Round(value, 2) == value;
 
-    public static string Format(decimal value) => value.ToString("0.##", CultureInfo.InvariantCulture);
+    public static string Format(decimal value) => value.ToString("0.##", LocalizationService.Culture);
 
     public static bool TryParse(string? text, out decimal value)
     {

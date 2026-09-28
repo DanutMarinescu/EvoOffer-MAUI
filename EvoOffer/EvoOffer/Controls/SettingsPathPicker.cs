@@ -1,3 +1,4 @@
+using EvoOffer.Services;
 using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Devices;
 using Microsoft.Maui.Storage;
@@ -19,7 +20,7 @@ public static class SettingsPathPicker
 #else
         var result = await FilePicker.Default.PickAsync(new PickOptions
         {
-            PickerTitle = "Choose a logo image",
+            PickerTitle = LocalizationService.Get("Controls_ChooseLogo"),
             FileTypes = new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<string>>
             {
                 [DevicePlatform.WinUI] = [".png", ".jpg", ".jpeg", ".webp"],
@@ -30,12 +31,41 @@ public static class SettingsPathPicker
             return null;
         var extension = Path.GetExtension(result.FullPath);
         if (!new[] { ".png", ".jpg", ".jpeg", ".webp" }.Contains(extension, StringComparer.OrdinalIgnoreCase))
-            throw new IOException("Choose a PNG, JPEG, or WebP image for the logo.");
+            throw new IOException(LocalizationService.Get("Controls_LogoFormat"));
         if (!File.Exists(result.FullPath))
-            throw new FileNotFoundException("The selected logo image is no longer available.", result.FullPath);
+            throw new FileNotFoundException(LocalizationService.Get("Controls_LogoUnavailable"), result.FullPath);
         return result.FullPath;
 #endif
     });
+
+    public static Task<string?> PickDataFileAsync() => MainThread.InvokeOnMainThreadAsync(async () =>
+    {
+#if IOS || MACCATALYST
+        return await PickAppleAsync([UTTypes.CommaSeparatedText], DataFileAccess, ValidateDataFilePath);
+#else
+        var result = await FilePicker.Default.PickAsync(new PickOptions
+        {
+            PickerTitle = LocalizationService.Get("Controls_ChooseCsv"),
+            FileTypes = new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<string>>
+            {
+                [DevicePlatform.WinUI] = [".csv"],
+                [DevicePlatform.Android] = ["text/csv", "text/comma-separated-values"]
+            })
+        });
+        if (result is null)
+            return null;
+        ValidateDataFilePath(result.FullPath);
+        return result.FullPath;
+#endif
+    });
+
+    private static void ValidateDataFilePath(string path)
+    {
+        if (!string.Equals(Path.GetExtension(path), ".csv", StringComparison.OrdinalIgnoreCase))
+            throw new IOException(LocalizationService.Get("Controls_CsvFormat"));
+        if (!File.Exists(path))
+            throw new FileNotFoundException(LocalizationService.Get("Controls_CsvUnavailable"), path);
+    }
 
     public static Task<string?> PickSaveDirectoryAsync() => MainThread.InvokeOnMainThreadAsync(async () =>
     {
@@ -49,31 +79,32 @@ public static class SettingsPathPicker
         picker.FileTypeFilter.Add("*");
         var window = Application.Current?.Windows.FirstOrDefault()?.Handler?.PlatformView
             as Microsoft.UI.Xaml.Window
-            ?? throw new InvalidOperationException("No window is available to show the folder browser.");
+            ?? throw new InvalidOperationException(LocalizationService.Get("Controls_FolderWindowUnavailable"));
         WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(window));
         var folder = await picker.PickSingleFolderAsync();
         return folder?.Path;
 #else
         await Task.CompletedTask;
-        throw new PlatformNotSupportedException("Folder selection is not supported on this platform.");
+        throw new PlatformNotSupportedException(LocalizationService.Get("Controls_FolderUnsupported"));
 #endif
     });
 
-    // Keep external Apple resources accessible to the existing path-based PDF service.
+    // Keep external Apple resources accessible to path-based consumers.
     // Each setting retains at most one saved and one draft security scope.
     public static void RestoreSavedAccess()
     {
 #if IOS || MACCATALYST
         LogoAccess.Restore();
         DirectoryAccess.Restore();
+        DataFileAccess.Restore();
 #endif
     }
 
-    public static void CommitSavedAccess(string? logoPath, string? saveDirectory)
+    public static void CommitSavedAccess(string? logoPath, string? saveDirectory, string? dataFilePath)
     {
 #if IOS || MACCATALYST
         var errors = new List<Exception>();
-        foreach (var (resource, path) in new[] { (LogoAccess, logoPath), (DirectoryAccess, saveDirectory) })
+        foreach (var (resource, path) in new[] { (LogoAccess, logoPath), (DirectoryAccess, saveDirectory), (DataFileAccess, dataFilePath) })
         {
             try
             {
@@ -85,7 +116,7 @@ public static class SettingsPathPicker
             }
         }
         if (errors.Count > 0)
-            throw new AggregateException("Access to the selected paths could not be remembered for the next launch.", errors);
+            throw new AggregateException(LocalizationService.Get("Controls_PathAccessNotSaved"), errors);
 #endif
     }
 
@@ -94,14 +125,16 @@ public static class SettingsPathPicker
 #if IOS || MACCATALYST
         LogoAccess.Discard();
         DirectoryAccess.Discard();
+        DataFileAccess.Discard();
 #endif
     }
 
 #if IOS || MACCATALYST
     private static readonly SavedResourceAccess LogoAccess = new("Settings.LogoBookmark");
     private static readonly SavedResourceAccess DirectoryAccess = new("Settings.SaveDirectoryBookmark");
+    private static readonly SavedResourceAccess DataFileAccess = new("Settings.DataFileBookmark");
 
-    private static async Task<string?> PickAppleAsync(UTType[] types, SavedResourceAccess resource)
+    private static async Task<string?> PickAppleAsync(UTType[] types, SavedResourceAccess resource, Action<string>? validatePath = null)
     {
         var completion = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
         using var picker = new UIDocumentPickerViewController(types, asCopy: false)
@@ -114,7 +147,7 @@ public static class SettingsPathPicker
             try
             {
                 var url = args.Urls.FirstOrDefault();
-                completion.TrySetResult(url is null ? null : resource.Select(url));
+                completion.TrySetResult(url is null ? null : resource.Select(url, validatePath));
             }
             catch (Exception exception)
             {
@@ -130,7 +163,7 @@ public static class SettingsPathPicker
             if (picker.PresentationController is { } presentation)
                 presentation.Delegate = dismissal;
             var controller = Platform.GetCurrentUIViewController()
-                ?? throw new InvalidOperationException("No window is available to show the file browser.");
+                ?? throw new InvalidOperationException(LocalizationService.Get("Controls_FileWindowUnavailable"));
             controller.PresentViewController(picker, true, null);
             return await completion.Task;
         }
@@ -158,7 +191,7 @@ public static class SettingsPathPicker
         public ResourceAccess(NSUrl url)
         {
             _url = url;
-            Path = url.Path ?? throw new IOException("The selected item has no local path.");
+            Path = url.Path ?? throw new IOException(LocalizationService.Get("Controls_NoLocalPath"));
             _started = url.StartAccessingSecurityScopedResource();
             try
             {
@@ -175,7 +208,7 @@ public static class SettingsPathPicker
                 using (error)
                 {
                     if (data is null || error is not null)
-                        throw new IOException(error?.LocalizedDescription ?? "Access to the selected item could not be saved.");
+                        throw new IOException(error?.LocalizedDescription ?? LocalizationService.Get("Controls_AccessNotSaved"));
                     Bookmark = Convert.ToBase64String(data.ToArray());
                 }
             }
@@ -242,9 +275,18 @@ public static class SettingsPathPicker
             }
         }
 
-        public string Select(NSUrl url)
+        public string Select(NSUrl url, Action<string>? validatePath)
         {
             var selected = new ResourceAccess(url);
+            try
+            {
+                validatePath?.Invoke(selected.Path);
+            }
+            catch
+            {
+                selected.Dispose();
+                throw;
+            }
             _draft?.Dispose();
             _draft = selected;
             return selected.Path;

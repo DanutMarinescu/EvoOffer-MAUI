@@ -11,17 +11,26 @@ public partial class App : Application
         InitializeComponent();
         _pdfService = pdfService;
         UserAppTheme = AppTheme.Light;
+        RefreshLanguageResources();
+        LocalizationService.LanguageChanged += (_, _) => RefreshLanguageResources();
     }
 
     protected override Window CreateWindow(IActivationState? activationState)
     {
-        return new Window(new MainPage(_pdfService))
+        var window = new Window(new MainPage(_pdfService))
         {
-            Title = "Offer Generator",
             Width = 1440,
             Height = 960,
             MinimumWidth = 760,
             MinimumHeight = 760
         };
+        window.SetDynamicResource(Window.TitleProperty, "AppTitle");
+        return window;
+    }
+
+    private void RefreshLanguageResources()
+    {
+        foreach (var (key, value) in LocalizationService.GetStrings())
+            Resources[key] = value;
     }
 }

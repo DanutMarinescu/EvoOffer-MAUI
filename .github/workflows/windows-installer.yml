@@ -1,0 +1,85 @@
+name: Windows installer
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'EvoOffer/**'
+      - '.github/workflows/windows-installer.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Windows ${{ matrix.architecture }} installer
+    runs-on: windows-2022
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        architecture: [x64, arm64]
+    defaults:
+      run:
+        shell: powershell
+        working-directory: EvoOffer
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install MAUI Windows workload
+        run: dotnet workload install maui-windows
+
+      - name: Install Inno Setup
+        run: |
+          $release = Invoke-RestMethod -Uri 'https://api.github.com/repos/jrsoftware/issrc/releases/tags/is-6_7_3'
+          $asset = @($release.assets | Where-Object { $_.name -eq 'innosetup-6.7.3.exe' })
+          if ($asset.Count -ne 1 -or $asset[0].digest -notmatch '^sha256:[0-9a-f]{64}$') {
+            throw 'The official Inno Setup release is missing its installer or SHA-256 digest.'
+          }
+          $setup = Join-Path $env:RUNNER_TEMP 'innosetup-6.7.3.exe'
+          Invoke-WebRequest -UseBasicParsing -Uri 'https://github.com/jrsoftware/issrc/releases/download/is-6_7_3/innosetup-6.7.3.exe' -OutFile $setup
+          if ((Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash -ne $asset[0].digest.Substring(7)) {
+            throw 'The Inno Setup installer checksum does not match the official release.'
+          }
+          $signature = Get-AuthenticodeSignature -LiteralPath $setup
+          if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'CN=Pyrsys B\.V\.(,|$)') {
+            throw 'The Inno Setup installer does not have the expected valid publisher signature.'
+          }
+          $process = Start-Process -FilePath $setup -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Inno Setup installation failed with exit code $($process.ExitCode)." }
+
+      - name: Run application tests
+        run: dotnet run --project EvoOffer.Tests -c Release
+
+      - name: Create installer
+        run: ./scripts/create-windows-installer.ps1 -Architecture '${{ matrix.architecture }}'
+
+      - name: Test install, reinstall, and uninstall
+        if: matrix.architecture == 'x64'
+        run: |
+          $installers = @(Get-ChildItem -Path artifacts/windows -Filter '*-win-x64-Setup.exe' -File)
+          if ($installers.Count -ne 1) { throw 'Expected exactly one x64 installer.' }
+          ./scripts/test-windows-installer.ps1 -InstallerPath $installers[0].FullName
+
+      - name: Upload installer and checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: EvoOffer-windows-${{ matrix.architecture }}-installer
+          path: |
+            EvoOffer/artifacts/windows/*-win-${{ matrix.architecture }}-Setup.exe
+            EvoOffer/artifacts/windows/*-win-${{ matrix.architecture }}-Setup.exe.sha256
+          if-no-files-found: error
+
+      - name: Upload installer test logs
+        if: always() && matrix.architecture == 'x64'
+        uses: actions/upload-artifact@v4
+        with:
+          name: EvoOffer-windows-x64-installer-test-logs
+          path: EvoOffer/artifacts/windows/smoke-test/*.log
+          if-no-files-found: ignore

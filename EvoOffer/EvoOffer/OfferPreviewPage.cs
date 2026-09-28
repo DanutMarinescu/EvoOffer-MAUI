@@ -11,25 +11,27 @@ public sealed class OfferPreviewPage : ContentPage
     private readonly Label _status;
     private readonly Button _retry;
     private readonly string _pdfUrl;
+    private readonly bool _isTemplatePreview;
     private bool _closed;
 
-    public OfferPreviewPage(OfferPdfPreviewFile previewFile)
+    public OfferPreviewPage(OfferPdfPreviewFile previewFile, bool isTemplatePreview = false)
     {
         ArgumentNullException.ThrowIfNull(previewFile);
         _previewFile = previewFile;
+        _isTemplatePreview = isTemplatePreview;
         _pdfUrl = new Uri(previewFile.FilePath).AbsoluteUri;
 
-        Title = "Offer preview";
+        Title = isTemplatePreview ? LocalizationService.Get("Preview_TemplateTitle") : LocalizationService.Get("Preview_OfferTitle");
         BackgroundColor = ResourceColor("PageBackground", "#F7F9FC");
 
         var title = new Label
         {
-            Text = "Offer preview", FontSize = 28, FontAttributes = FontAttributes.Bold,
+            Text = Title, FontSize = 28, FontAttributes = FontAttributes.Bold,
             TextColor = ResourceColor("Ink", "#101D31")
         };
         SemanticProperties.SetHeadingLevel(title, SemanticHeadingLevel.Level1);
-        var close = new Button { Text = "Close preview", AutomationId = "CloseOfferPreview" };
-        SemanticProperties.SetHint(close, "Return to the offer editor.");
+        var close = new Button { Text = LocalizationService.Get("Preview_Close"), AutomationId = "CloseOfferPreview" };
+        SemanticProperties.SetHint(close, isTemplatePreview ? LocalizationService.Get("Preview_ReturnSettings") : LocalizationService.Get("Preview_ReturnEditor"));
         close.Clicked += async (_, _) =>
         {
             close.IsEnabled = false;
@@ -56,10 +58,10 @@ public sealed class OfferPreviewPage : ContentPage
         _loading = new ActivityIndicator { IsRunning = true, WidthRequest = 24, HeightRequest = 24 };
         _status = new Label
         {
-            Text = "Loading PDF preview…", VerticalOptions = LayoutOptions.Center,
+            Text = LocalizationService.Get("Preview_Loading"), VerticalOptions = LayoutOptions.Center,
             TextColor = ResourceColor("MutedInk", "#50627C"), AutomationId = "OfferPreviewStatus"
         };
-        _retry = new Button { Text = "Retry", IsVisible = false, AutomationId = "RetryOfferPreview" };
+        _retry = new Button { Text = LocalizationService.Get("Preview_Retry"), IsVisible = false, AutomationId = "RetryOfferPreview" };
         var statusBar = new Grid
         {
             ColumnDefinitions =
@@ -76,7 +78,7 @@ public sealed class OfferPreviewPage : ContentPage
 
         // Windows' MAUI WebView uses WebView2, which renders local PDFs directly.
         _pdfView = new WebView { AutomationId = "OfferPdfPreview" };
-        SemanticProperties.SetDescription(_pdfView, "Generated offer PDF");
+        SemanticProperties.SetDescription(_pdfView, isTemplatePreview ? LocalizationService.Get("Preview_TemplateDescription") : LocalizationService.Get("Preview_OfferDescription"));
         _pdfView.Navigated += OnPdfNavigated;
         _pdfView.ProcessTerminated += (_, _) => ShowLoadError(canRetry: false);
         _pdfView.Source = _pdfUrl;
@@ -85,7 +87,7 @@ public sealed class OfferPreviewPage : ContentPage
             _retry.IsVisible = false;
             _loading.IsRunning = true;
             _loading.IsVisible = true;
-            _status.Text = "Loading PDF preview…";
+            _status.Text = LocalizationService.Get("Preview_Loading");
             try
             {
                 _pdfView.Reload();
@@ -126,7 +128,9 @@ public sealed class OfferPreviewPage : ContentPage
         _loading.IsRunning = false;
         _loading.IsVisible = false;
         _retry.IsVisible = false;
-        _status.Text = "Use the PDF toolbar to zoom, save or print your offer.";
+        _status.Text = _isTemplatePreview
+            ? LocalizationService.Get("Preview_TemplateInstructions")
+            : LocalizationService.Get("Preview_OfferInstructions");
     }
 
     private void ShowLoadError(bool canRetry = true)
@@ -138,8 +142,8 @@ public sealed class OfferPreviewPage : ContentPage
         _loading.IsVisible = false;
         _retry.IsVisible = canRetry;
         _status.Text = canRetry
-            ? "The PDF preview could not be loaded. Try again or close the preview to return to your offer."
-            : "The PDF viewer stopped. Close the preview and generate your offer again to reopen it.";
+            ? LocalizationService.Get("Preview_LoadError")
+            : LocalizationService.Get("Preview_ViewerStopped");
     }
 
     protected override void OnDisappearing()
