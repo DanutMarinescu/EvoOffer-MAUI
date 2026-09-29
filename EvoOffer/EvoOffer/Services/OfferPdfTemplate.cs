@@ -413,8 +413,6 @@ internal sealed class OfferPdfTemplate(OfferPdfData offer, OfferPdfOptions optio
                     text.Span(value);
                 });
             }
-            if (!string.IsNullOrWhiteSpace(item.Category))
-                product.Item().Text(item.Category).FontSize(options.FontSize * 0.85f).FontColor(Muted);
         });
     }
 

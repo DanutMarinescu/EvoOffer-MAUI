@@ -571,7 +571,14 @@ try
             "Canceling during synchronous PDF rendering waits for the writer and removes its file");
     }
 
+    var generationStarted = DateTime.Now.AddSeconds(-1);
     using var firstPreview = await OfferPdfPreviewFile.CreateAsync(pdfService, pdfOffer, previewCacheDirectory);
+    var firstPreviewName = Path.GetFileNameWithoutExtension(firstPreview.FilePath);
+    Check(firstPreviewName.StartsWith(pdfOffer.ClientName + "-", StringComparison.Ordinal)
+        && DateTime.TryParseExact(firstPreviewName[(pdfOffer.ClientName.Length + 1)..],
+            "yyyy-MM-dd_HH-mm-ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out var generatedAt)
+        && generatedAt >= generationStarted && generatedAt <= DateTime.Now,
+        "Offer filenames preserve the client name and include the local generation date and time");
     using var secondPreview = await OfferPdfPreviewFile.CreateAsync(pdfService, longOffer, previewCacheDirectory);
     var firstPreviewText = Encoding.Latin1.GetString(await File.ReadAllBytesAsync(firstPreview.FilePath));
     var secondPreviewText = Encoding.Latin1.GetString(await File.ReadAllBytesAsync(secondPreview.FilePath));
@@ -601,6 +608,9 @@ try
         Path.GetDirectoryName(path) == savedPdfDirectory && Path.GetExtension(path) == ".pdf")
         && Directory.EnumerateFiles(savedPdfDirectory).Count() == 2,
         "Simultaneous PDF saves create distinct completed files in the selected directory");
+    Check(savedPaths.Select(Path.GetFileName).ToHashSet().SetEquals(new[]
+        { firstPreviewName + ".pdf", firstPreviewName + " (2).pdf" }),
+        "Saved PDFs retain the generation filename and add a number only on a name collision");
     foreach (var savedPath in savedPaths)
         Check(Encoding.Latin1.GetString(await File.ReadAllBytesAsync(savedPath)) == firstPreviewText,
             "A saved PDF contains the complete preview without overwriting an earlier save");
@@ -615,6 +625,19 @@ try
         "A failed PDF save preserves an existing destination file and leaves no partial output");
     File.Delete(blockedDirectory);
 
+    var unsafeClientOffer = new OfferPdfData("Client român / \\ : * ? \" < > |\t", null,
+        new[] { line }, new AppSettings());
+    using (var safePreview = await OfferPdfPreviewFile.CreateAsync(new PreviewPdfServiceStub(),
+        unsafeClientOffer, previewCacheDirectory))
+    {
+        var safePath = await safePreview.SaveCopyAsync(savedPdfDirectory);
+        Check(Path.GetDirectoryName(safePath) == savedPdfDirectory
+            && Path.GetFileName(safePath).StartsWith("Client român _ _ _ _ _ _ _ _ _-", StringComparison.Ordinal)
+            && File.Exists(safePath),
+            "Invalid characters in client names are replaced without losing spaces or Romanian characters");
+        File.Delete(safePath);
+    }
+
     firstPreview.Dispose();
     firstPreview.Dispose();
     Check(!File.Exists(firstPreview.FilePath) && File.Exists(secondPreview.FilePath),
@@ -623,6 +646,7 @@ try
     var unavailablePreviewReported = false;
     try { await firstPreview.SaveCopyAsync(failedSaveDirectory); }
     catch (FileNotFoundException) { unavailablePreviewReported = true; }
+    catch (DirectoryNotFoundException) { unavailablePreviewReported = true; }
     Check(unavailablePreviewReported && (!Directory.Exists(failedSaveDirectory)
         || !Directory.EnumerateFiles(failedSaveDirectory).Any()),
         "Saving an unavailable preview reports the error and cleans up its partial output");

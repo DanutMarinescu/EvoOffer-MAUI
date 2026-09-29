@@ -11,7 +11,7 @@ public partial class MainPage : ContentPage
 {
     private const string DefaultMessagePreference = "offer_default_message";
     private const string VatRatePreference = "offer_vat_percentage";
-    private const double MinimumTableWidth = 1620;
+    private const double MinimumTableWidth = 1520;
     private readonly MainViewModel _viewModel;
     private readonly IOfferPdfService _pdfService;
     private readonly SettingsStore _settingsStore = new(FileSystem.Current.AppDataDirectory);

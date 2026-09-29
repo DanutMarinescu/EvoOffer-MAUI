@@ -193,8 +193,9 @@ public static class OfferPdfTemplateTests
             "600 x 90 mm", "Natural", offer.Subtotal.ToString("N2", culture) + " RON",
             offer.VatTotal.ToString("N2", culture) + " RON", offer.GrandTotal.ToString("N2", culture) + " RON"
         };
-        check(expected.All(value => text.Contains(value, StringComparison.Ordinal)),
-            $"The {offer.PdfTemplateId} template retains company, client, message, variants and calculated totals in {offer.Language}");
+        check(expected.All(value => text.Contains(value, StringComparison.Ordinal))
+            && offer.Items.All(item => !text.Contains(item.Category, StringComparison.Ordinal)),
+            $"The {offer.PdfTemplateId} template retains company, client, message, names, sizes, colors and calculated totals without product categories in {offer.Language}");
         check(text.Contains(offer.IssuerName, StringComparison.Ordinal) != OfferPdfTemplates.HidesIssuerName(offer.PdfTemplateId),
             $"The {offer.PdfTemplateId} template respects issuer-name visibility in {offer.Language}");
     }

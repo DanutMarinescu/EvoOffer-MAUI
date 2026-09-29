@@ -1,3 +1,4 @@
+using System.Globalization;
 using EvoOffer.Models;
 
 namespace EvoOffer.Services;
@@ -20,8 +21,12 @@ public sealed class OfferPdfPreviewFile : IDisposable
             throw new PlatformNotSupportedException(
                 "QuestPDF does not support iOS, Android or Mac Catalyst. Generate PDFs on Windows or in a desktop/server .NET host.");
 
-        var previewDirectory = Path.Combine(cacheDirectory, "offer-previews");
-        var filePath = Path.Combine(previewDirectory, $"offer-{Guid.NewGuid():N}.pdf");
+        // Each preview has its own directory so identical client names and timestamps are safe.
+        var previewDirectory = Path.Combine(cacheDirectory, "offer-previews", Guid.NewGuid().ToString("N"));
+        var clientName = string.Concat(offer.ClientName.Select(character =>
+            char.IsControl(character) || "<>:\"/\\|?*".Contains(character) ? '_' : character));
+        var generatedAt = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss", CultureInfo.InvariantCulture);
+        var filePath = Path.Combine(previewDirectory, $"{clientName}-{generatedAt}.pdf");
         OfferPdfPreviewFile? preview = null;
         try
         {
@@ -29,8 +34,8 @@ public sealed class OfferPdfPreviewFile : IDisposable
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 Directory.CreateDirectory(previewDirectory);
-                using var output = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
                 preview = new OfferPdfPreviewFile(filePath);
+                using var output = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
                 pdfService.Generate(offer, output);
                 cancellationToken.ThrowIfCancellationRequested();
             }, cancellationToken).ConfigureAwait(false);
@@ -52,9 +57,9 @@ public sealed class OfferPdfPreviewFile : IDisposable
         cancellationToken.ThrowIfCancellationRequested();
 
         var directory = Path.GetFullPath(saveDirectory);
-        var fileName = $"offer-{Guid.NewGuid():N}";
+        var fileName = Path.GetFileNameWithoutExtension(FilePath);
         var savedPath = Path.Combine(directory, $"{fileName}.pdf");
-        var stagingPath = Path.Combine(directory, $".{fileName}.tmp");
+        var stagingPath = Path.Combine(directory, $".offer-{Guid.NewGuid():N}.tmp");
         var stagingCreated = false;
         try
         {
@@ -69,10 +74,20 @@ public sealed class OfferPdfPreviewFile : IDisposable
                 await destination.FlushAsync(cancellationToken).ConfigureAwait(false);
             }
 
-            cancellationToken.ThrowIfCancellationRequested();
             // Publish only the completed PDF. Never replace an existing offer.
-            File.Move(stagingPath, savedPath);
-            return savedPath;
+            for (var copyNumber = 2; ; copyNumber++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                try
+                {
+                    File.Move(stagingPath, savedPath);
+                    return savedPath;
+                }
+                catch (IOException) when (File.Exists(savedPath) || Directory.Exists(savedPath))
+                {
+                    savedPath = Path.Combine(directory, $"{fileName} ({copyNumber}).pdf");
+                }
+            }
         }
         catch
         {
@@ -90,7 +105,11 @@ public sealed class OfferPdfPreviewFile : IDisposable
 
     public void Dispose()
     {
-        try { File.Delete(FilePath); }
+        try
+        {
+            File.Delete(FilePath);
+            Directory.Delete(Path.GetDirectoryName(FilePath)!);
+        }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             // A native viewer can briefly keep the cached PDF locked after closing.

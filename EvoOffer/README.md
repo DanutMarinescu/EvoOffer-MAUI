@@ -337,15 +337,17 @@ or writes to a caller-owned stream without closing it.
 
 On Windows, **Generate Offer** validates the offer, snapshots its items and saved
 issuer/contact details and optional logo path, and generates the PDF in the background.
-It saves a uniquely named PDF in the configured save directory, then opens
-that actual document in an in-app PDF preview, replacing the former hand-built
+It saves a PDF named `{ClientName}-{yyyy-MM-dd_HH-mm-ss}.pdf` in the configured
+save directory, using the local generation time and replacing invalid filename
+characters with underscores. If the name already exists, it adds ` (2)`, ` (3)`,
+and so on. It then opens that actual document in an in-app PDF preview, replacing the former hand-built
 table preview. The viewer provides page navigation, zoom, save, and print controls.
 Generation errors keep the offer editable and display a message; viewer loading
 errors provide a retry action. **Close preview** returns to the editor.
 
-`OfferPdfPreviewFile` owns a uniquely named PDF in the app's cache directory under
-`offer-previews`. It removes partial output after generation errors or
-cancellation and attempts to delete the completed PDF when its viewer closes.
+`OfferPdfPreviewFile` owns a PDF with the same client-and-time filename in a unique
+cache subdirectory under `offer-previews`. It removes partial output after
+generation errors or cancellation and attempts to delete the completed PDF when its viewer closes.
 The permanent copy in the save directory remains available after closing the
 preview or app. Saving uses a temporary file followed by a rename, so unfinished
 copies are cleaned up and existing offers are never overwritten. Missing logo
@@ -395,7 +397,8 @@ other font with QuestPDF's `FontManager` before using it. `OfferPdfTemplate.cs`
 contains all three reusable layouts. Classic keeps the original A4 letterhead design: an optional logo to the left of the
 issuer name, contact details with vector icons and vertical separators, an
 underlined recipient, a greeting and custom message, and a six-column product
-table. Selected sizes, colors, and product categories appear under their names. The navy table heading and
+table. Product details show the name, selected size, and color in the offer table
+and all PDF templates. The navy table heading and
 grand-total bar follow the reference design, with thin rules between items and
 full-width subtotal and VAT rows.
 

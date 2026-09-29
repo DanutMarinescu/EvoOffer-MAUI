@@ -83,20 +83,19 @@
                             <AbsoluteLayout>
                             <ScrollView x:Name="TableViewport" Orientation="Horizontal" AbsoluteLayout.LayoutBounds="0,0,1,1" AbsoluteLayout.LayoutFlags="All"
                                         HorizontalScrollBarVisibility="Always" VerticalScrollBarVisibility="Never">
-                                <Grid x:Name="TableContent" RowDefinitions="64,*" WidthRequest="1620">
-                                    <Grid ColumnDefinitions="56,1.2*,1.45*,270,180,190,130,130,180,96" ColumnSpacing="1" BackgroundColor="#E0E7EF">
-                                        <BoxView Grid.ColumnSpan="10" Color="#EEF2F7" />
+                                <Grid x:Name="TableContent" RowDefinitions="64,*" WidthRequest="1520">
+                                    <Grid ColumnDefinitions="56,*,270,180,190,130,130,180,96" ColumnSpacing="1" BackgroundColor="#E0E7EF">
+                                        <BoxView Grid.ColumnSpan="9" Color="#EEF2F7" />
                                         <Label Text="#" Style="{StaticResource TableHeaderStyle}" />
-                                        <Label Grid.Column="1" Text="{DynamicResource Category}" Style="{StaticResource TableHeaderStyle}" />
-                                        <Label Grid.Column="2" Text="{DynamicResource Item}" Style="{StaticResource TableHeaderStyle}" />
-                                        <Label Grid.Column="3" Text="{DynamicResource Size}" Style="{StaticResource TableHeaderStyle}" />
-                                        <Label Grid.Column="4" Text="{DynamicResource Color}" Style="{StaticResource TableHeaderStyle}" />
-                                        <Label Grid.Column="5" Text="{DynamicResource UnitPriceHeader}" Style="{StaticResource TableHeaderStyle}" LineBreakMode="WordWrap" HorizontalTextAlignment="Center" />
-                                        <Label Grid.Column="6" Text="{DynamicResource Quantity}" Style="{StaticResource TableHeaderStyle}" HorizontalTextAlignment="Center" />
-                                        <Label Grid.Column="7" Text="{Binding VatHeaderText}" Style="{StaticResource TableHeaderStyle}" LineBreakMode="WordWrap" HorizontalTextAlignment="Center" />
-                                        <Label Grid.Column="8" Text="{DynamicResource TotalHeader}" Style="{StaticResource TableHeaderStyle}" LineBreakMode="WordWrap" HorizontalTextAlignment="Center" />
-                                        <Label Grid.Column="9" Text="{DynamicResource Actions}" Style="{StaticResource TableHeaderStyle}" HorizontalTextAlignment="Center" Padding="8,0" />
-                                        <BoxView Grid.ColumnSpan="10" Color="#DEE6EF" HeightRequest="1" VerticalOptions="End" />
+                                        <Label Grid.Column="1" Text="{DynamicResource Item}" Style="{StaticResource TableHeaderStyle}" />
+                                        <Label Grid.Column="2" Text="{DynamicResource Size}" Style="{StaticResource TableHeaderStyle}" />
+                                        <Label Grid.Column="3" Text="{DynamicResource Color}" Style="{StaticResource TableHeaderStyle}" />
+                                        <Label Grid.Column="4" Text="{DynamicResource UnitPriceHeader}" Style="{StaticResource TableHeaderStyle}" LineBreakMode="WordWrap" HorizontalTextAlignment="Center" />
+                                        <Label Grid.Column="5" Text="{DynamicResource Quantity}" Style="{StaticResource TableHeaderStyle}" HorizontalTextAlignment="Center" />
+                                        <Label Grid.Column="6" Text="{Binding VatHeaderText}" Style="{StaticResource TableHeaderStyle}" LineBreakMode="WordWrap" HorizontalTextAlignment="Center" />
+                                        <Label Grid.Column="7" Text="{DynamicResource TotalHeader}" Style="{StaticResource TableHeaderStyle}" LineBreakMode="WordWrap" HorizontalTextAlignment="Center" />
+                                        <Label Grid.Column="8" Text="{DynamicResource Actions}" Style="{StaticResource TableHeaderStyle}" HorizontalTextAlignment="Center" Padding="8,0" />
+                                        <BoxView Grid.ColumnSpan="9" Color="#DEE6EF" HeightRequest="1" VerticalOptions="End" />
                                     </Grid>
                                     <CollectionView x:Name="ItemsTable" Grid.Row="1" ItemsSource="{Binding Items}"
                                                     SelectionMode="None" ItemSizingStrategy="MeasureFirstItem"
@@ -113,29 +112,27 @@
                                         </CollectionView.EmptyView>
                                         <CollectionView.ItemTemplate>
                                             <DataTemplate x:DataType="models:OfferLineItem">
-                                                <Grid ColumnDefinitions="56,1.2*,1.45*,270,180,190,130,130,180,96" HeightRequest="56" ColumnSpacing="1">
+                                                <Grid ColumnDefinitions="56,*,270,180,190,130,130,180,96" HeightRequest="56" ColumnSpacing="1">
                                                     <Label Text="{Binding Number}" Style="{StaticResource TableCellStyle}" Padding="8,0" />
-                                                    <Label Grid.Column="1" Text="{Binding Category}" Style="{StaticResource TableCellStyle}"
-                                                           ToolTipProperties.Text="{Binding Category}" />
-                                                    <Label Grid.Column="2" Text="{Binding Name}" Style="{StaticResource TableCellStyle}"
+                                                    <Label Grid.Column="1" Text="{Binding Name}" Style="{StaticResource TableCellStyle}"
                                                            ToolTipProperties.Text="{Binding Name}" />
-                                                    <Border Grid.Column="3" Style="{StaticResource InputBorderStyle}" Margin="8,7" HeightRequest="40">
+                                                    <Border Grid.Column="2" Style="{StaticResource InputBorderStyle}" Margin="8,7" HeightRequest="40">
                                                         <controls:DropdownPicker Title="{DynamicResource SelectSize}" ItemsSource="{Binding AvailableSizes}"
                                                                 SelectedItem="{Binding SelectedSize, Mode=TwoWay}" IsEnabled="{Binding HasSizeOptions}"
                                                                 FontSize="15" Margin="8,0" SemanticProperties.Description="{DynamicResource ProductSize}"
                                                                 ToolTipProperties.Text="{Binding SelectedSize}" />
                                                     </Border>
-                                                    <Border Grid.Column="4" Style="{StaticResource InputBorderStyle}" Margin="8,7" HeightRequest="40">
+                                                    <Border Grid.Column="3" Style="{StaticResource InputBorderStyle}" Margin="8,7" HeightRequest="40">
                                                         <controls:DropdownPicker Title="{DynamicResource SelectColor}" ItemsSource="{Binding AvailableColors}"
                                                                 SelectedItem="{Binding SelectedColor, Mode=TwoWay}" IsEnabled="{Binding HasColorOptions}"
                                                                 FontSize="15" Margin="8,0" SemanticProperties.Description="{DynamicResource ProductColor}" />
                                                     </Border>
-                                                    <Label Grid.Column="5" Text="{Binding UnitPriceText}" Style="{StaticResource TableCellStyle}" HorizontalTextAlignment="End" />
-                                                    <controls:QuantityInput Grid.Column="6" Text="{Binding QuantityText}" HasError="{Binding HasQuantityError}"
+                                                    <Label Grid.Column="4" Text="{Binding UnitPriceText}" Style="{StaticResource TableCellStyle}" HorizontalTextAlignment="End" />
+                                                    <controls:QuantityInput Grid.Column="5" Text="{Binding QuantityText}" HasError="{Binding HasQuantityError}"
                                                                             Margin="16,7" HeightRequest="40" />
-                                                    <Label Grid.Column="7" Text="{Binding VatAmountText}" Style="{StaticResource TableCellStyle}" HorizontalTextAlignment="End" />
-                                                    <Label Grid.Column="8" Text="{Binding TotalText}" Style="{StaticResource TableCellStyle}" HorizontalTextAlignment="End" />
-                                                    <ImageButton Grid.Column="9" Source="trash.png" BackgroundColor="Transparent" WidthRequest="44" HeightRequest="44"
+                                                    <Label Grid.Column="6" Text="{Binding VatAmountText}" Style="{StaticResource TableCellStyle}" HorizontalTextAlignment="End" />
+                                                    <Label Grid.Column="7" Text="{Binding TotalText}" Style="{StaticResource TableCellStyle}" HorizontalTextAlignment="End" />
+                                                    <ImageButton Grid.Column="8" Source="trash.png" BackgroundColor="Transparent" WidthRequest="44" HeightRequest="44"
                                                                  HorizontalOptions="Center" VerticalOptions="Center" Padding="12" CornerRadius="5"
                                                                  Clicked="OnDeleteItemClicked" ToolTipProperties.Text="{DynamicResource RemoveItem}"
                                                                  SemanticProperties.Description="{Binding RemoveDescription}" />
@@ -147,8 +144,7 @@
                                                     <BoxView Grid.Column="6" Color="#E7ECF2" WidthRequest="1" HorizontalOptions="Start" />
                                                     <BoxView Grid.Column="7" Color="#E7ECF2" WidthRequest="1" HorizontalOptions="Start" />
                                                     <BoxView Grid.Column="8" Color="#E7ECF2" WidthRequest="1" HorizontalOptions="Start" />
-                                                    <BoxView Grid.Column="9" Color="#E7ECF2" WidthRequest="1" HorizontalOptions="Start" />
-                                                    <BoxView Grid.ColumnSpan="10" Color="#E4EAF1" HeightRequest="1" VerticalOptions="End" />
+                                                    <BoxView Grid.ColumnSpan="9" Color="#E4EAF1" HeightRequest="1" VerticalOptions="End" />
                                                 </Grid>
                                             </DataTemplate>
                                         </CollectionView.ItemTemplate>

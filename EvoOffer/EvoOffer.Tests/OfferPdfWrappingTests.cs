@@ -8,6 +8,8 @@ using QuestPDF.Fluent;
 internal static class OfferPdfWrappingTests
 {
     private const string Category = "Categorie verificată";
+    private const string Size = "600 x 90 mm";
+    private const string Color = "Natur";
     private const string FollowingItem = "Următorul produs";
 
     public static void Run(Action<bool, string> check)
@@ -18,39 +20,42 @@ internal static class OfferPdfWrappingTests
             + "împotriva umidității, potrivit pentru proiecte de renovare și amenajare interioară";
         var wrapped = Render(longName);
         var wrappedLines = NameLines(wrapped);
-        var wrappedCategory = wrapped.Single(text => text.Value == Category);
+        var wrappedSize = wrapped.Single(text => text.Value == Size);
+        var wrappedColor = wrapped.Single(text => text.Value == Color);
         var wrappedFollowing = wrapped.Single(text => text.Value == FollowingItem);
 
         check(wrappedLines.Length > 1 && wrappedLines.Select(text => (text.Page, text.Y)).Distinct().Count() > 1
             && string.Join(' ', wrappedLines.Select(text => text.Value)) == longName,
             "Long Romanian product names wrap onto distinct lines without truncating any text");
-        check(wrappedCategory.Y > baseline.Single(text => text.Value == Category).Y
+        check(wrappedSize.Y > baseline.Single(text => text.Value == Size).Y
             && wrappedFollowing.Y > baseline.Single(text => text.Value == FollowingItem).Y
-            && wrappedCategory.Page == 0 && wrappedFollowing.Page == 0
-            && IsAfter(wrappedCategory, wrappedLines[^1]) && IsAfter(wrappedFollowing, wrappedCategory),
-            "Wrapping a product name expands its row and moves its category and the following item down without overlap");
+            && wrappedSize.Page == 0 && wrappedFollowing.Page == 0
+            && IsAfter(wrappedSize, wrappedLines[^1]) && IsAfter(wrappedColor, wrappedSize)
+            && IsAfter(wrappedFollowing, wrappedColor),
+            "Wrapping a product name expands its row and moves its size, color and the following item down without overlap");
 
         var identifier = string.Concat(Enumerable.Repeat("PRODUS1234567890", 24));
         var identifierLayout = Render(identifier);
         var identifierLines = NameLines(identifierLayout);
         check(identifierLines.Length > 1
             && string.Concat(identifierLines.Select(text => text.Value)) == identifier
-            && IsAfter(identifierLayout.Single(text => text.Value == Category), identifierLines[^1]),
-            "Unbroken product identifiers wrap across lines and preserve every character before the category");
+            && IsAfter(identifierLayout.Single(text => text.Value == Size), identifierLines[^1]),
+            "Unbroken product identifiers wrap across lines and preserve every character before the size");
 
         var spanningName = string.Join(' ', Enumerable.Repeat(
             "Sistem profesional pentru instalare și întreținere cu documentație tehnică completă", 100));
         var spanning = Render(spanningName);
         var spanningLines = NameLines(spanning);
-        var spanningCategory = spanning.Single(text => text.Value == Category);
+        var spanningSize = spanning.Single(text => text.Value == Size);
+        var spanningColor = spanning.Single(text => text.Value == Color);
         var spanningFollowing = spanning.Single(text => text.Value == FollowingItem);
         var total = spanning.Single(text => text.Value == "TOTAL CU T.V.A.");
         check(spanningLines.Select(text => text.Page).Distinct().Count() > 1
             && string.Join(' ', spanningLines.Select(text => text.Value)) == spanningName,
             "An exceptionally long product name continues across pages without losing or duplicating text");
-        check(IsAfter(spanningCategory, spanningLines[^1])
-            && IsAfter(spanningFollowing, spanningCategory) && IsAfter(total, spanningFollowing),
-            "The category, next product and offer total appear after the complete name when a row spans pages");
+        check(IsAfter(spanningSize, spanningLines[^1]) && IsAfter(spanningColor, spanningSize)
+            && IsAfter(spanningFollowing, spanningColor) && IsAfter(total, spanningFollowing),
+            "The size, color, next product and offer total appear after the complete name when a row spans pages");
     }
 
     private static RenderedText[] Render(string name)
@@ -58,7 +63,8 @@ internal static class OfferPdfWrappingTests
         var offer = new OfferPdfData("Client verificare", null,
             new[]
             {
-                new OfferLineItem(1, new CatalogItem(Category, name, 123m), 2m, 21m),
+                new OfferLineItem(1, new CatalogItem(name,
+                    new[] { new CatalogVariant(Size, Color, 123m, 148.83m) }, new[] { Category }), 2m, 21m),
                 new OfferLineItem(2, new CatalogItem(string.Empty, FollowingItem, 45m), 1m, 21m)
             }, new AppSettings { IssuerName = "Verificare ofertă", Language = AppSettings.Romanian });
         var options = new OfferPdfOptions { FooterText = string.Empty, ShowPageNumbers = false };

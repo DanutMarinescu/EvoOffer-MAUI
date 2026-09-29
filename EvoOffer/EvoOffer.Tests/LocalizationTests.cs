@@ -46,7 +46,7 @@ public static class LocalizationTests
             check(vm.Status == "S-a adăugat Produs românesc."
                 && vm.DefaultMessage.StartsWith("Vă mulțumim", StringComparison.Ordinal)
                 && vm.CustomText == vm.DefaultMessage
-                && vm.VatHeaderText == "TVA 19,5%\n(RON)"
+                && vm.VatHeaderText.ReplaceLineEndings("\n") == "TVA 19,5%\n(RON)"
                 && vm.GrandTotalSummary == "Total cu TVA: 1.851,75 RON"
                 && vm.NewQuantityText == "1,5" && line.QuantityText == "1,5",
                 "Romanian offers localize status, default message, headers, totals and fractional quantities");
@@ -58,7 +58,7 @@ public static class LocalizationTests
             LocalizationService.SetLanguage(AppSettings.English);
             vm.RefreshLocalization();
             check(languageChanges == 1 && vm.Status == "Added Produs românesc."
-                && vm.VatHeaderText == "VAT 19.5%\n(RON)"
+                && vm.VatHeaderText.ReplaceLineEndings("\n") == "VAT 19.5%\n(RON)"
                 && vm.GrandTotalSummary == "Total incl. VAT: 1,851.75 RON"
                 && vm.NewQuantityText == "1.5" && line.QuantityText == "1.5"
                 && vm.CustomText.StartsWith("Thank you", StringComparison.Ordinal)
