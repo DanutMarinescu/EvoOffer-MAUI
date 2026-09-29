@@ -632,17 +632,35 @@ Your previous catalog and settings are unchanged.</value>
   <data name="Template_ClassicName" xml:space="preserve">
     <value>Classic</value>
   </data>
+  <data name="Template_ClassicNoIssuerNameDescription" xml:space="preserve">
+    <value>Traditional letterhead with a much larger logo and no issuer name in the heading.</value>
+  </data>
+  <data name="Template_ClassicNoIssuerNameName" xml:space="preserve">
+    <value>Classic (No issuer name)</value>
+  </data>
   <data name="Template_MinimalDescription" xml:space="preserve">
     <value>Compact letterhead, fine table rules and understated totals.</value>
   </data>
   <data name="Template_MinimalName" xml:space="preserve">
     <value>Minimal</value>
   </data>
+  <data name="Template_MinimalNoIssuerNameDescription" xml:space="preserve">
+    <value>Fine table rules and understated totals, with a much larger logo and no issuer name in the heading.</value>
+  </data>
+  <data name="Template_MinimalNoIssuerNameName" xml:space="preserve">
+    <value>Minimal (No issuer name)</value>
+  </data>
   <data name="Template_ModernDescription" xml:space="preserve">
     <value>Bold title band, recipient panel and spacious product cards.</value>
   </data>
   <data name="Template_ModernName" xml:space="preserve">
     <value>Modern</value>
+  </data>
+  <data name="Template_ModernNoIssuerNameDescription" xml:space="preserve">
+    <value>Bold title band and spacious product cards, with a much larger logo and no issuer name in the heading.</value>
+  </data>
+  <data name="Template_ModernNoIssuerNameName" xml:space="preserve">
+    <value>Modern (No issuer name)</value>
   </data>
   <data name="Template_PreviewButton" xml:space="preserve">
     <value>Preview PDF with my details</value>

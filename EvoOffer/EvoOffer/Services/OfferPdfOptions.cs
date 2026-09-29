@@ -31,8 +31,7 @@ public sealed record OfferPdfOptions
 
     internal void Validate()
     {
-        if (TemplateId is not null && TemplateId is not
-            (OfferPdfTemplates.Classic or OfferPdfTemplates.Modern or OfferPdfTemplates.Minimal))
+        if (TemplateId is not null && TemplateId != OfferPdfTemplates.Normalize(TemplateId))
             throw new ArgumentException("Choose a supported PDF template.", nameof(TemplateId));
         ArgumentNullException.ThrowIfNull(PageSize);
         if (!float.IsFinite(PageSize.Width) || !float.IsFinite(PageSize.Height)

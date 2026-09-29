@@ -31,6 +31,7 @@
                 <Setter Property="TitleColor" Value="{StaticResource MutedInk}" />
                 <Setter Property="BackgroundColor" Value="Transparent" />
                 <Setter Property="FontSize" Value="17" />
+                <Setter Property="VerticalTextAlignment" Value="Center" />
                 <Setter Property="Margin" Value="10,0" />
             </Style>
             <Style TargetType="Button">

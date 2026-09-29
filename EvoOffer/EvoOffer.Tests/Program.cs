@@ -23,6 +23,7 @@ LocalizationTests.Run(Check);
 // of the machine culture. LocalizationTests covers both supported languages.
 LocalizationService.SetLanguage(AppSettings.English);
 CatalogImportTests.Run(Check);
+await CatalogStartupTests.RunAsync(Check);
 ImportedOfferTests.Run(Check);
 VariantSelectionTests.Run(Check);
 DimensionVariantTests.Run(Check);

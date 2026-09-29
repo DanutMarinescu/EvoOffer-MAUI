@@ -34,12 +34,14 @@ if (-not $InnoSetupPath) {
     if ($compilerCommand) {
         $InnoSetupPath = $compilerCommand.Source
     } else {
-        foreach ($programDirectory in @(${env:ProgramFiles(x86)}, $env:ProgramFiles, (Join-Path $env:LOCALAPPDATA 'Programs'))) {
-            if ($programDirectory) {
-                $candidate = Join-Path $programDirectory 'Inno Setup 6\ISCC.exe'
-                if (Test-Path -LiteralPath $candidate -PathType Leaf) {
-                    $InnoSetupPath = $candidate
-                    break
+        :findCompiler foreach ($majorVersion in @(7, 6)) {
+            foreach ($programDirectory in @($env:ProgramFiles, ${env:ProgramFiles(x86)}, (Join-Path $env:LOCALAPPDATA 'Programs'))) {
+                if ($programDirectory) {
+                    $candidate = Join-Path $programDirectory "Inno Setup $majorVersion\ISCC.exe"
+                    if (Test-Path -LiteralPath $candidate -PathType Leaf) {
+                        $InnoSetupPath = $candidate
+                        break findCompiler
+                    }
                 }
             }
         }
@@ -49,10 +51,20 @@ if (-not $InnoSetupPath -or -not (Test-Path -LiteralPath $InnoSetupPath -PathTyp
     throw 'Inno Setup was not found. Install Inno Setup 6.3 or later from https://jrsoftware.org/isdl.php, or pass -InnoSetupPath with the full path to ISCC.exe.'
 }
 $InnoSetupPath = (Resolve-Path -LiteralPath $InnoSetupPath).Path
-$compilerVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($InnoSetupPath)
-if ($compilerVersion.FileMajorPart -lt 6 -or ($compilerVersion.FileMajorPart -eq 6 -and $compilerVersion.FileMinorPart -lt 3)) {
+$compilerFileVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($InnoSetupPath)
+$compilerVersion = [version]::new($compilerFileVersion.FileMajorPart, $compilerFileVersion.FileMinorPart, $compilerFileVersion.FileBuildPart)
+# Inno Setup 7 can have zeroed file metadata; query the compiler engine instead.
+# Keep the metadata path for older compilers that do not support --version.
+if ($compilerVersion.Major -eq 0) {
+    $versionOutput = & $InnoSetupPath --version
+    if ($LASTEXITCODE -ne 0 -or -not [version]::TryParse(($versionOutput -join "`n").Trim(), [ref]$compilerVersion)) {
+        throw "Could not determine the Inno Setup version at '$InnoSetupPath'. Install Inno Setup 6.3 or later, or pass -InnoSetupPath with the full path to a supported ISCC.exe."
+    }
+}
+if ($compilerVersion -lt [version]'6.3') {
     throw 'Inno Setup 6.3 or later is required for x64 and ARM64 architecture support.'
 }
+Write-Host "Using Inno Setup $compilerVersion at $InnoSetupPath"
 
 $projectPath = Join-Path $PSScriptRoot '..\EvoOffer\EvoOffer.csproj'
 [xml]$project = Get-Content -LiteralPath $projectPath -Raw

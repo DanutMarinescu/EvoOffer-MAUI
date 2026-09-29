@@ -74,6 +74,8 @@ for an ARM64 PC, set a release version, or choose an output folder:
 
 `-Version` also sets the published application's display version. Pass
 `-InnoSetupPath 'C:\path\to\ISCC.exe'` if the compiler is not found automatically.
+The script detects Inno Setup 7 (including 7.1) and 6 in their standard installation
+folders, preferring 7, or uses `ISCC.exe` from `PATH` when available.
 The script publishes into a fresh temporary folder and copies the entire payload
 into setup, including PDF libraries, fonts, images, and translations.
 
@@ -187,7 +189,10 @@ Pass signing properties to `package-mac.sh` when those are configured.
 
 The **PDF template** dropdown offers **Classic** (the original letterhead),
 **Modern** (a bold title band and product cards), and **Minimal** (a compact
-letterhead and ruled table). Selecting a template immediately updates a sample
+letterhead and ruled table). Each also has a **No issuer name** variant with a
+larger logo and the offer title in place of the issuer name, including on
+continuation pages. These variants retain the issuer's contact details and work
+without a logo. Selecting a template immediately updates a sample
 image rendered from that layout. These bundled previews work on every platform.
 On Windows, **Preview PDF with my details** opens a full PDF using sample
 products and the unsaved colors, issuer, logo, language, message and VAT settings. It
@@ -198,7 +203,7 @@ offer destination. Close the preview to continue editing settings.
 bars), **Secondary color** (supporting labels, rules and subtle panel tints), and
 **Text color** (body copy). Choose a preset swatch, adjust the red/green/blue
 sliders, or enter a three- or six-digit hex value. The same palette applies to
-all three templates. Text inside primary-colored bars automatically uses dark
+all six template choices. Text inside primary-colored bars automatically uses dark
 or white lettering for contrast. The bundled layout images show the default
 palette; the full PDF preview uses your current color choices.
 
@@ -449,11 +454,13 @@ consistent calculated VAT amounts rather than the inconsistent example totals
 in the supplied image.
 
 The sample command also produces `template-classic.pdf`, `template-modern.pdf`,
-and `template-minimal.pdf` from the same renderer and sample-data helper used by
-Settings, plus `palette-*.pdf` examples with custom colors and light primary
+and `template-minimal.pdf`, plus their `-no-issuer-name.pdf` variants with a sample
+logo, from the same renderer and sample-data helper used by Settings, plus
+`palette-*.pdf` examples with custom colors and light primary
 backgrounds. After changing a layout, refresh its bundled Settings image with
-Poppler (repeat for `modern` and `minimal`):
+Poppler (repeat for the other layouts and their variants):
 
 ```sh
 pdftoppm -f 1 -singlefile -scale-to 1000 -png /tmp/evooffer-pdf-samples/template-classic.pdf EvoOffer/Resources/Images/template_classic
+pdftoppm -f 1 -singlefile -scale-to 1000 -png /tmp/evooffer-pdf-samples/template-classic-no-issuer-name.pdf EvoOffer/Resources/Images/template_classic_no_issuer_name
 ```

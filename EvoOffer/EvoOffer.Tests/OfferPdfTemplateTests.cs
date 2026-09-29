@@ -113,12 +113,17 @@ public static class OfferPdfTemplateTests
         }
 
         CheckPreview(service, check);
+        OfferPdfNoIssuerNameTests.Run(check);
     }
 
     private static void CheckSettings(Action<bool, string> check)
     {
         check(OfferPdfTemplates.All.Select(template => template.Id).SequenceEqual(new[]
-            { OfferPdfTemplates.Classic, OfferPdfTemplates.Modern, OfferPdfTemplates.Minimal })
+            {
+                OfferPdfTemplates.Classic, OfferPdfTemplates.ClassicNoIssuerName,
+                OfferPdfTemplates.Modern, OfferPdfTemplates.ModernNoIssuerName,
+                OfferPdfTemplates.Minimal, OfferPdfTemplates.MinimalNoIssuerName
+            })
             && OfferPdfTemplates.All.All(template => !string.IsNullOrWhiteSpace(template.Name)
                 && !string.IsNullOrWhiteSpace(template.Description) && !string.IsNullOrWhiteSpace(template.PreviewImage)),
             "The PDF template catalog exposes stable choices with names, descriptions and previews");
@@ -183,13 +188,15 @@ public static class OfferPdfTemplateTests
         var culture = CultureInfo.GetCultureInfo(offer.Language == AppSettings.English ? "en-GB" : "ro-RO");
         var expected = new[]
         {
-            offer.ClientName, offer.IssuerName, offer.Message, offer.AddressLine1,
+            offer.ClientName, offer.Message, offer.AddressLine1,
             offer.Email, offer.PhoneNumber, offer.VatNumber, "Oak flooring", "Installation",
             "600 x 90 mm", "Natural", offer.Subtotal.ToString("N2", culture) + " RON",
             offer.VatTotal.ToString("N2", culture) + " RON", offer.GrandTotal.ToString("N2", culture) + " RON"
         };
         check(expected.All(value => text.Contains(value, StringComparison.Ordinal)),
             $"The {offer.PdfTemplateId} template retains company, client, message, variants and calculated totals in {offer.Language}");
+        check(text.Contains(offer.IssuerName, StringComparison.Ordinal) != OfferPdfTemplates.HidesIssuerName(offer.PdfTemplateId),
+            $"The {offer.PdfTemplateId} template respects issuer-name visibility in {offer.Language}");
     }
 
     private static string VisibleText(OfferPdfData offer, OfferPdfOptions options)

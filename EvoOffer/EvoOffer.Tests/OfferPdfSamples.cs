@@ -128,6 +128,9 @@ internal static class OfferPdfSamples
                 PdfTemplateId = template.Id,
                 Language = AppSettings.English,
                 IssuerName = "EXAMPLE STUDIO",
+                LogoPath = OfferPdfTemplates.HidesIssuerName(template.Id)
+                    ? Path.Combine(AppContext.BaseDirectory, "Fixtures", "sample_logo.png")
+                    : null,
                 AddressLine1 = "23 Example Street",
                 AddressLine2 = "Bucharest, Romania",
                 Email = "hello@example.com",

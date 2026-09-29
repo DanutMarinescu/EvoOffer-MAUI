@@ -149,9 +149,10 @@ public static class TemplateColorTests
             check(offer.PdfPrimaryColor == Primary && offer.PdfSecondaryColor == Secondary && offer.PdfTextColor == Text,
                 $"Rendering {template.Id} with overrides does not modify the offer palette");
 
-            if (template.Id is OfferPdfTemplates.Classic or OfferPdfTemplates.Modern)
+            var baseTemplate = OfferPdfTemplates.GetBaseTemplateId(template.Id);
+            if (baseTemplate is OfferPdfTemplates.Classic or OfferPdfTemplates.Modern)
             {
-                var label = template.Id == OfferPdfTemplates.Classic ? "Product" : offer.IssuerName;
+                var label = baseTemplate == OfferPdfTemplates.Classic ? "Product" : "Commercial offer";
                 check(RenderedLabelColors(offer, defaults, label).All(color => color == "#FFFFFF"),
                     $"The {template.Id} template uses readable white labels on a dark primary background");
                 var light = defaults with { AccentColor = Color.FromHex("#FFF6CC") };
@@ -212,7 +213,7 @@ public static class TemplateColorTests
         {
             var settings = CreateSettings(template.Id);
             yield return new OfferPdfSample("palette-" + template.Id, OfferPdfTemplatePreview.Create(settings), defaults);
-            if (template.Id is OfferPdfTemplates.Classic or OfferPdfTemplates.Modern)
+            if (OfferPdfTemplates.GetBaseTemplateId(template.Id) is OfferPdfTemplates.Classic or OfferPdfTemplates.Modern)
             {
                 settings.PdfPrimaryColor = "#FFF6CC";
                 yield return new OfferPdfSample("palette-light-" + template.Id,

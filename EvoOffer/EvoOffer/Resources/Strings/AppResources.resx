@@ -632,17 +632,35 @@ Catalogul și setările anterioare au rămas neschimbate.</value>
   <data name="Template_ClassicName" xml:space="preserve">
     <value>Clasic</value>
   </data>
+  <data name="Template_ClassicNoIssuerNameDescription" xml:space="preserve">
+    <value>Antet tradițional, cu o siglă mult mai mare și fără numele emitentului în titlu.</value>
+  </data>
+  <data name="Template_ClassicNoIssuerNameName" xml:space="preserve">
+    <value>Clasic (Fără numele emitentului)</value>
+  </data>
   <data name="Template_MinimalDescription" xml:space="preserve">
     <value>Antet compact, linii fine de tabel și totaluri discrete.</value>
   </data>
   <data name="Template_MinimalName" xml:space="preserve">
     <value>Minimalist</value>
   </data>
+  <data name="Template_MinimalNoIssuerNameDescription" xml:space="preserve">
+    <value>Linii fine de tabel și totaluri discrete, cu o siglă mult mai mare și fără numele emitentului în titlu.</value>
+  </data>
+  <data name="Template_MinimalNoIssuerNameName" xml:space="preserve">
+    <value>Minimalist (Fără numele emitentului)</value>
+  </data>
   <data name="Template_ModernDescription" xml:space="preserve">
     <value>Bandă de titlu accentuată, panou pentru destinatar și fișe de produse spațioase.</value>
   </data>
   <data name="Template_ModernName" xml:space="preserve">
     <value>Modern</value>
+  </data>
+  <data name="Template_ModernNoIssuerNameDescription" xml:space="preserve">
+    <value>Bandă de titlu accentuată și fișe de produse spațioase, cu o siglă mult mai mare și fără numele emitentului în titlu.</value>
+  </data>
+  <data name="Template_ModernNoIssuerNameName" xml:space="preserve">
+    <value>Modern (Fără numele emitentului)</value>
   </data>
   <data name="Template_PreviewButton" xml:space="preserve">
     <value>Previzualizează PDF-ul cu datele mele</value>

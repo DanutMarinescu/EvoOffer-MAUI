@@ -19,7 +19,6 @@ public partial class MainPage : ContentPage
     private bool? _usingSidebar;
     private bool? _usingCompactComposer;
     private bool _openingDialog;
-    private bool _catalogLoaded;
 
     public MainPage(IOfferPdfService pdfService)
     {
@@ -45,7 +44,7 @@ public partial class MainPage : ContentPage
         LocalizationService.SetLanguage(_settings.Language);
         InitializeComponent();
         SettingsPathPicker.RestoreSavedAccess();
-        _viewModel = new MainViewModel(_settings.VatRate);
+        _viewModel = new MainViewModel(_settings.VatRate, ProductCatalog.Empty);
         _viewModel.DefaultMessage = _settings.DefaultMessage;
         _viewModel.CustomText = _viewModel.DefaultMessage;
         if (settingsLoadFailed)
@@ -54,26 +53,28 @@ public partial class MainPage : ContentPage
         SizeChanged += OnPageSizeChanged;
         FormArea.SizeChanged += OnFormAreaSizeChanged;
         _viewModel.Items.CollectionChanged += OnItemsChanged;
+        Loaded += OnLoaded;
     }
 
-    protected override async void OnAppearing()
+    private async void OnLoaded(object? sender, EventArgs e)
     {
-        base.OnAppearing();
-        if (_catalogLoaded)
-            return;
-        _catalogLoaded = true;
+        // Each new main page reloads the saved file once, after its controls are ready.
+        // Returning from Settings must not reload the catalog or reset selections.
+        Loaded -= OnLoaded;
         if (string.IsNullOrWhiteSpace(_settings.DataFilePath))
+        {
+            await _viewModel.ReloadCatalogAsync(_settings.DataFilePath);
             return;
+        }
 
         SettingsButton.IsEnabled = false;
         var previousStatus = _viewModel.Status;
         _viewModel.SetStatus("StatusLoadingCatalog");
         try
         {
-            var catalog = await Task.Run(() => CatalogCsvImporter.ImportFile(_settings.DataFilePath, _settings.VatRate));
-            _viewModel.ApplyCatalog(catalog);
+            await _viewModel.ReloadCatalogAsync(_settings.DataFilePath);
             if (previousStatus == LocalizationService.Get("StatusReady"))
-                _viewModel.SetStatus("StatusCatalogLoaded", catalog.Items.Count);
+                _viewModel.SetStatus("StatusCatalogLoaded", _viewModel.Catalog.Items.Count);
             else
                 _viewModel.Status = previousStatus;
         }

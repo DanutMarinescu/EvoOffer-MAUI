@@ -185,6 +185,15 @@ public sealed class MainViewModel : ObservableObject
             SetProperty(ref _status, LocalizationService.Format(_statusKey, _statusArguments), nameof(Status));
     }
 
+    public async Task ReloadCatalogAsync(string? dataFilePath)
+    {
+        var vatRate = VatRate;
+        var catalog = string.IsNullOrWhiteSpace(dataFilePath)
+            ? ProductCatalog.Empty
+            : await Task.Run(() => CatalogCsvImporter.ImportFile(dataFilePath, vatRate));
+        ApplyCatalog(catalog);
+    }
+
     public void ApplyCatalog(ProductCatalog catalog)
     {
         ArgumentNullException.ThrowIfNull(catalog);

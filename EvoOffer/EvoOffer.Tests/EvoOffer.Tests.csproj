@@ -13,5 +13,6 @@
     <Compile Include="../EvoOffer/ViewModels/*.cs" Link="ViewModels/%(Filename)%(Extension)" />
     <Compile Include="../EvoOffer/Services/*.cs" Link="Services/%(Filename)%(Extension)" />
     <EmbeddedResource Include="../EvoOffer/Resources/Strings/*.resx" Link="Resources/Strings/%(Filename)%(Extension)" />
+    <Content Include="Fixtures/sample_logo.png" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

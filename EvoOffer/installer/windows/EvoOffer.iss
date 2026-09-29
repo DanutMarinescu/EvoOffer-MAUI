@@ -174,8 +174,7 @@ begin
      (InstalledArchitecture <> '{#Architecture}') then
   begin
     SuppressibleMsgBox(
-      FmtMessage(CustomMessage('DifferentArchitectureInstalled'),
-        [InstalledArchitecture, '{#Architecture}']),
+      FmtMessage(CustomMessage('DifferentArchitectureInstalled'), [InstalledArchitecture, '{#Architecture}']),
       mbError, MB_OK, IDOK);
     Exit;
   end;

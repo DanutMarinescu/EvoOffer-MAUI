@@ -24,7 +24,7 @@ public static class MauiProgram
         builder.Services.AddSingleton(new OfferPdfOptions());
         builder.Services.AddSingleton<IOfferPdfService, OfferPdfService>();
 
-#if IOS || MACCATALYST
+#if IOS || MACCATALYST || WINDOWS
         builder.ConfigureMauiHandlers(handlers =>
             handlers.AddHandler<Controls.DropdownPicker, Controls.DropdownPickerHandler>());
 #endif

@@ -17,8 +17,11 @@ internal sealed class OfferPdfTemplate(OfferPdfData offer, OfferPdfOptions optio
     private Color PaperTint => Tint(Muted, 0.93);
     private Color OnPrimary => ContrastingInk(Primary);
     private string TemplateId => OfferPdfTemplates.Normalize(options.TemplateId ?? offer.PdfTemplateId);
-    private bool Modern => TemplateId == OfferPdfTemplates.Modern;
-    private bool Minimal => TemplateId == OfferPdfTemplates.Minimal;
+    private bool Modern => OfferPdfTemplates.GetBaseTemplateId(TemplateId) == OfferPdfTemplates.Modern;
+    private bool Minimal => OfferPdfTemplates.GetBaseTemplateId(TemplateId) == OfferPdfTemplates.Minimal;
+    private bool HideIssuerName => OfferPdfTemplates.HidesIssuerName(TemplateId);
+    private bool ShowIssuerName => !HideIssuerName && !string.IsNullOrWhiteSpace(offer.IssuerName);
+    private string BrandTitle => ShowIssuerName ? offer.IssuerName : Title;
     private bool Romanian => offer.Language != AppSettings.English;
     private CultureInfo Culture => CultureInfo.GetCultureInfo(Romanian ? "ro-RO" : "en-GB");
     private string Localize(string romanian, string english) => Romanian ? romanian : english;
@@ -70,9 +73,9 @@ internal sealed class OfferPdfTemplate(OfferPdfData offer, OfferPdfOptions optio
                     : Minimal ? ComposeMinimalLetterhead : ComposeLetterhead);
                 header.Item().SkipOnce().BorderBottom(0.7f).BorderColor(Rule).PaddingBottom(10).Row(row =>
                 {
-                    row.RelativeItem().Text(string.IsNullOrWhiteSpace(offer.IssuerName) ? Title : offer.IssuerName)
+                    row.RelativeItem().Text(BrandTitle)
                         .SemiBold().FontColor(Primary);
-                    row.RelativeItem().AlignRight().Text($"{Title} / {offer.ClientName}")
+                    row.RelativeItem().AlignRight().Text(HideIssuerName ? offer.ClientName : $"{Title} / {offer.ClientName}")
                         .FontSize(options.FontSize * 0.85f).FontColor(Muted);
                 });
             });
@@ -115,14 +118,19 @@ internal sealed class OfferPdfTemplate(OfferPdfData offer, OfferPdfOptions optio
             {
                 row.Spacing(18);
                 if (logo is not null)
-                    row.ConstantItem(62).Height(66).AlignMiddle().Image(logo).FitArea();
+                {
+                    IContainer logoContainer = HideIssuerName
+                        ? row.ConstantItem(180).MaxHeight(126)
+                        : row.ConstantItem(62).Height(66);
+                    logoContainer.AlignMiddle().Image(logo).FitArea();
+                }
                 row.RelativeItem().AlignMiddle().Column(brand =>
                 {
                     brand.Spacing(6);
-                    brand.Item().Text(string.IsNullOrWhiteSpace(offer.IssuerName) ? Title : offer.IssuerName)
+                    brand.Item().Text(BrandTitle)
                         .FontSize(options.FontSize * 2.5f).SemiBold().FontColor(Primary);
                     var subtitle = string.IsNullOrWhiteSpace(options.Tagline)
-                        ? (string.IsNullOrWhiteSpace(offer.IssuerName) ? string.Empty : Title.ToUpper(Culture))
+                        ? (ShowIssuerName ? Title.ToUpper(Culture) : string.Empty)
                         : options.Tagline;
                     if (!string.IsNullOrWhiteSpace(subtitle))
                         brand.Item().Text(subtitle).FontSize(options.FontSize * 0.9f).LetterSpacing(0.12f).FontColor(Muted);
@@ -198,14 +206,25 @@ internal sealed class OfferPdfTemplate(OfferPdfData offer, OfferPdfOptions optio
             {
                 row.Spacing(16);
                 if (logo is not null)
-                    row.ConstantItem(64).Height(64).Background("#FFFFFF").Padding(5).Image(logo).FitArea();
-                row.RelativeItem().Column(brand =>
+                {
+                    IContainer logoContainer = HideIssuerName
+                        ? row.ConstantItem(180).MaxHeight(126)
+                        : row.ConstantItem(64).Height(64);
+                    logoContainer = logoContainer.Background("#FFFFFF").Padding(5);
+                    if (HideIssuerName)
+                        logoContainer = logoContainer.AlignMiddle();
+                    logoContainer.Image(logo).FitArea();
+                }
+                IContainer brandContainer = row.RelativeItem();
+                if (HideIssuerName)
+                    brandContainer = brandContainer.AlignMiddle();
+                brandContainer.Column(brand =>
                 {
                     brand.Spacing(6);
-                    if (!string.IsNullOrWhiteSpace(offer.IssuerName))
+                    if (ShowIssuerName)
                         brand.Item().Text(offer.IssuerName).FontSize(options.FontSize * 1.8f)
                             .SemiBold().FontColor(OnPrimary);
-                    brand.Item().Text(Title).FontSize(options.FontSize * 1.25f).FontColor(OnPrimary);
+                    brand.Item().Text(Title).FontSize(options.FontSize * (HideIssuerName ? 1.8f : 1.25f)).FontColor(OnPrimary);
                     if (!string.IsNullOrWhiteSpace(options.Tagline))
                         brand.Item().Text(options.Tagline).FontSize(options.FontSize * 0.85f).FontColor(OnPrimary);
                 });
@@ -237,16 +256,26 @@ internal sealed class OfferPdfTemplate(OfferPdfData offer, OfferPdfOptions optio
             {
                 row.Spacing(12);
                 if (logo is not null)
-                    row.ConstantItem(42).Height(42).Image(logo).FitArea();
-                row.RelativeItem(1.6f).Column(brand =>
+                {
+                    IContainer logoContainer = HideIssuerName
+                        ? row.ConstantItem(150).MaxHeight(96)
+                        : row.ConstantItem(42).Height(42);
+                    if (HideIssuerName)
+                        logoContainer = logoContainer.AlignMiddle();
+                    logoContainer.Image(logo).FitArea();
+                }
+                IContainer brandContainer = row.RelativeItem(1.6f);
+                if (HideIssuerName)
+                    brandContainer = brandContainer.AlignMiddle();
+                brandContainer.Column(brand =>
                 {
                     brand.Spacing(4);
-                    brand.Item().Text(string.IsNullOrWhiteSpace(offer.IssuerName) ? Title : offer.IssuerName)
+                    brand.Item().Text(BrandTitle)
                         .SemiBold().FontSize(options.FontSize * 1.4f).FontColor(Primary);
                     if (!string.IsNullOrWhiteSpace(options.Tagline))
                         brand.Item().Text(options.Tagline).FontSize(options.FontSize * 0.8f).FontColor(Muted);
                 });
-                if (!string.IsNullOrWhiteSpace(offer.IssuerName))
+                if (ShowIssuerName)
                     row.RelativeItem().AlignRight().Text(Title).FontSize(options.FontSize * 1.15f).FontColor(Muted);
             });
             var address = string.Join(" · ", new[] { offer.AddressLine1, offer.AddressLine2 }
