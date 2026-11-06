@@ -27,6 +27,9 @@ await CatalogStartupTests.RunAsync(Check);
 ImportedOfferTests.Run(Check);
 VariantSelectionTests.Run(Check);
 DimensionVariantTests.Run(Check);
+ServiceSettingsTests.Run(Check);
+ServiceOfferTests.Run(Check);
+DiscountTests.Run(Check);
 
 foreach (var culture in new[] { "en-US", "ro-RO" })
 {
@@ -390,6 +393,8 @@ using (var invalidOutput = new MemoryStream())
 }
 
 QuestPDF.Settings.License = LicenseType.Evaluation;
+ServicePdfTests.Run(Check);
+DiscountPdfTests.Run(Check);
 OfferPdfTemplateTests.Run(Check);
 TemplateColorTests.Run(Check);
 OfferPdfWrappingTests.Run(Check);

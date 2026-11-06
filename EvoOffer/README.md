@@ -229,6 +229,22 @@ The destination is created when needed. Both selections are applied with
 **Save settings**; canceling a browser or the settings screen preserves the
 previous settings.
 
+The **Services** table stores a name, unit of measurement, and price excluding
+VAT (RON) for each service. Use **Add service** to add a row, edit any field
+directly, or use the delete button on a row to remove it. Names and units are
+required; prices must be nonnegative with at most two decimal places. Decimal
+commas and dots are accepted. **Save settings** persists the changes in the
+`Services` collection in `settings.json`; **Cancel** discards them. Existing
+settings files without services start with an empty table.
+
+Use **Add service** in the offer's right side panel to select a saved service
+and set its quantity. The offer line uses the saved name, unit of measurement,
+and price excluding VAT, with the current offer VAT rate. Quantities remain
+editable in the offer table. Services can be added alongside products or used
+in a service-only offer without importing a CSV. Editing or deleting a service
+in Settings does not change lines already added to the offer. All PDF templates
+include the saved unit of measurement with the service details.
+
 The **Data file** section selects a `.csv` product catalog. Choose a file, then
 **Save settings** to confirm, validate, and import it. A success popup reports the
 number of imported products. Invalid files leave the previous catalog and saved

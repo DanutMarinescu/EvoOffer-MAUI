@@ -18,6 +18,12 @@
   <data name="Add" xml:space="preserve">
     <value>Adaugă</value>
   </data>
+  <data name="AddService" xml:space="preserve">
+    <value>Adaugă serviciu</value>
+  </data>
+  <data name="AddServiceToOffer" xml:space="preserve">
+    <value>Adaugă serviciu</value>
+  </data>
   <data name="AddressLine1" xml:space="preserve">
     <value>Adresă, rândul 1</value>
   </data>
@@ -279,6 +285,12 @@
   <data name="DefaultOfferMessageLabel" xml:space="preserve">
     <value>Mesajul implicit al ofertei</value>
   </data>
+  <data name="DeleteService" xml:space="preserve">
+    <value>Șterge serviciul</value>
+  </data>
+  <data name="DeleteServiceDescription" xml:space="preserve">
+    <value>Șterge serviciul {0}</value>
+  </data>
   <data name="Email" xml:space="preserve">
     <value>E-mail</value>
   </data>
@@ -292,7 +304,7 @@
     <value>Introduceți o adresă de e-mail validă, de exemplu nume@exemplu.ro.</value>
   </data>
   <data name="EmptyOfferHint" xml:space="preserve">
-    <value>Selectați un produs mai sus și apăsați Adaugă.</value>
+    <value>Selectați un produs mai sus și apăsați Adaugă sau folosiți Adaugă serviciu.</value>
   </data>
   <data name="EmptyOfferTitle" xml:space="preserve">
     <value>Oferta dumneavoastră începe aici</value>
@@ -560,6 +572,33 @@ Catalogul și setările anterioare au rămas neschimbate.</value>
   <data name="SelectSize" xml:space="preserve">
     <value>Selectați mărimea</value>
   </data>
+  <data name="ServiceName" xml:space="preserve">
+    <value>Denumire</value>
+  </data>
+  <data name="ServiceNameRequired" xml:space="preserve">
+    <value>Introduceți denumirea serviciului.</value>
+  </data>
+  <data name="ServicePrice" xml:space="preserve">
+    <value>Preț fără TVA (RON)</value>
+  </data>
+  <data name="ServicePriceValidation" xml:space="preserve">
+    <value>Introduceți un preț mai mare sau egal cu zero, cu cel mult două zecimale.</value>
+  </data>
+  <data name="ServiceUnit" xml:space="preserve">
+    <value>Unitate de măsură</value>
+  </data>
+  <data name="ServiceUnitRequired" xml:space="preserve">
+    <value>Introduceți o unitate de măsură.</value>
+  </data>
+  <data name="Services" xml:space="preserve">
+    <value>Servicii</value>
+  </data>
+  <data name="ServicesEmpty" xml:space="preserve">
+    <value>Nu există servicii definite.</value>
+  </data>
+  <data name="ServicesHelp" xml:space="preserve">
+    <value>Adăugați servicii și modificați câmpurile direct în tabel. Modificările se aplică prin Salvează setările.</value>
+  </data>
   <data name="Settings" xml:space="preserve">
     <value>Setări</value>
   </data>
@@ -721,5 +760,89 @@ fără TVA</value>
   </data>
   <data name="VatRateValidation" xml:space="preserve">
     <value>Introduceți un procent TVA între 0 și 100, cu cel mult două zecimale.</value>
+  </data>
+  <data name="SelectService" xml:space="preserve">
+    <value>Selectați un serviciu</value>
+  </data>
+  <data name="SelectServiceHelp" xml:space="preserve">
+    <value>Alegeți un serviciu salvat și introduceți cantitatea. Puteți modifica ulterior cantitatea în ofertă.</value>
+  </data>
+  <data name="NoServicesAvailable" xml:space="preserve">
+    <value>Nu există servicii disponibile. Adăugați-le mai întâi în Setări.</value>
+  </data>
+  <data name="InvalidServiceValidation" xml:space="preserve">
+    <value>Acest serviciu are date nevalide. Corectați denumirea, unitatea și prețul în Setări.</value>
+  </data>
+  <data name="ServiceAmountTooLarge" xml:space="preserve">
+    <value>Valoarea serviciului este prea mare. Reduceți prețul sau cantitatea.</value>
+  </data>
+  <data name="UnitOfMeasurement" xml:space="preserve">
+    <value>Unitate de măsură</value>
+  </data>
+  <data name="Discount" xml:space="preserve">
+    <value>Reducere</value>
+  </data>
+  <data name="OfferDiscount" xml:space="preserve">
+    <value>Reducere ofertă</value>
+  </data>
+  <data name="ItemDiscount" xml:space="preserve">
+    <value>Reducere articol</value>
+  </data>
+  <data name="DiscountPerUnit" xml:space="preserve">
+    <value>Reducere pe unitate</value>
+  </data>
+  <data name="DiscountItemTotal" xml:space="preserve">
+    <value>Reducere pe total articol</value>
+  </data>
+  <data name="DiscountPercentage" xml:space="preserve">
+    <value>Procent</value>
+  </data>
+  <data name="DiscountAbsolute" xml:space="preserve">
+    <value>Sumă fixă</value>
+  </data>
+  <data name="DiscountPercentageValue" xml:space="preserve">
+    <value>Reducere (%)</value>
+  </data>
+  <data name="DiscountAbsoluteValue" xml:space="preserve">
+    <value>Reducere (RON, TVA inclus)</value>
+  </data>
+  <data name="DiscountApplyTo" xml:space="preserve">
+    <value>Aplică reducerea la</value>
+  </data>
+  <data name="DiscountType" xml:space="preserve">
+    <value>Tipul reducerii</value>
+  </data>
+  <data name="OfferDiscountHelp" xml:space="preserve">
+    <value>Se calculează la totalul ofertei, după reducerile pe articole.</value>
+  </data>
+  <data name="DiscountVatHelp" xml:space="preserve">
+    <value>Sumele reducerilor includ TVA. Reducerile existente se ajustează automat când se schimbă cantitățile sau prețurile, până la valoarea totalului disponibil.</value>
+  </data>
+  <data name="DiscountBaseAmount" xml:space="preserve">
+    <value>Valoare înainte de reducere: {0} RON (TVA inclus)</value>
+  </data>
+  <data name="DiscountPreviewAmount" xml:space="preserve">
+    <value>Reducere: −{0} RON · Total după reducere: {1} RON</value>
+  </data>
+  <data name="DiscountPercentageValidation" xml:space="preserve">
+    <value>Introduceți un procent între 0 și 100, cu maximum două zecimale.</value>
+  </data>
+  <data name="DiscountAbsoluteValidation" xml:space="preserve">
+    <value>Introduceți o sumă pozitivă sau zero, cu maximum două zecimale.</value>
+  </data>
+  <data name="DiscountExceedsBaseValidation" xml:space="preserve">
+    <value>Reducerea nu poate depăși {0} RON.</value>
+  </data>
+  <data name="DiscountPerUnitDescription" xml:space="preserve">
+    <value>{0} pe unitate</value>
+  </data>
+  <data name="DiscountItemTotalDescription" xml:space="preserve">
+    <value>{0} pe total articol</value>
+  </data>
+  <data name="DiscountActionDescription" xml:space="preserve">
+    <value>Editează reducerea pentru {0}</value>
+  </data>
+  <data name="GeneralDiscountSummary" xml:space="preserve">
+    <value>Reducere {0}: −{1} RON</value>
   </data>
 </root>

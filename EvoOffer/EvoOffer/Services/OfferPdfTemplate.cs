@@ -13,6 +13,7 @@ internal sealed class OfferPdfTemplate(OfferPdfData offer, OfferPdfOptions optio
     private readonly Color Primary = options.AccentColor ?? Color.FromHex(offer.PdfPrimaryColor);
     private readonly Color Ink = options.TextColor ?? Color.FromHex(offer.PdfTextColor);
     private readonly Color Muted = options.SecondaryColor ?? Color.FromHex(offer.PdfSecondaryColor);
+    private static readonly Color DiscountInk = Color.FromHex("#B42318");
     private Color Rule => Tint(Muted, 0.67);
     private Color PaperTint => Tint(Muted, 0.93);
     private Color OnPrimary => ContrastingInk(Primary);
@@ -352,13 +353,16 @@ internal sealed class OfferPdfTemplate(OfferPdfData offer, OfferPdfOptions optio
             var mixedRates = offer.Items.Select(item => item.VatRate).Distinct().Skip(1).Any();
             foreach (var item in offer.Items)
             {
+                var numberWidth = Math.Max(26, item.Number.ToString(CultureInfo.InvariantCulture).Length
+                    * options.FontSize * 0.65f);
                 table.Cell().PaddingBottom(8).PreventPageBreak().Border(0.7f).BorderColor(Rule).Column(card =>
                 {
+                    if (item.HasDiscount)
+                        card.Item().PaddingHorizontal(10).PaddingTop(7).PaddingLeft(numberWidth + 24)
+                            .Element(discount => ComposeItemDiscount(discount, item));
                     card.Item().Background(PaperTint).PaddingHorizontal(10).PaddingVertical(7).Row(row =>
                     {
                         row.Spacing(12);
-                        var numberWidth = Math.Max(26, item.Number.ToString(CultureInfo.InvariantCulture).Length
-                            * options.FontSize * 0.65f);
                         row.ConstantItem(numberWidth).Text(item.Number.ToString(Culture))
                             .SemiBold().FontColor(Primary);
                         row.RelativeItem().Element(product => ComposeProductDetails(product, item, emphasizeName: true));
@@ -390,6 +394,22 @@ internal sealed class OfferPdfTemplate(OfferPdfData offer, OfferPdfOptions optio
         });
     }
 
+    private void ComposeItemDiscount(IContainer container, OfferPdfLine item)
+    {
+        container.PaddingBottom(6).Row(row =>
+        {
+            row.Spacing(10);
+            row.RelativeItem().Text($"{Localize("Reducere", "Discount")}: {item.Discount!.Describe(offer.Language)}")
+                .FontSize(options.FontSize * 0.85f).FontColor(DiscountInk);
+            row.RelativeItem().AlignRight().Text(text =>
+            {
+                text.DefaultTextStyle(style => style.FontSize(options.FontSize * 0.85f).FontColor(DiscountInk));
+                text.Span(Money(-item.DiscountAmount)).SemiBold();
+                text.Span($" ({Localize("inclusiv TVA", "incl. VAT")})");
+            });
+        });
+    }
+
     private void ComposeProductDetails(IContainer container, OfferPdfLine item, bool emphasizeName = false)
     {
         container.Column(product =>
@@ -400,6 +420,7 @@ internal sealed class OfferPdfTemplate(OfferPdfData offer, OfferPdfOptions optio
                 name.SemiBold();
             foreach (var (label, value) in new[]
             {
+                (Localize("Unitate de măsură", "Unit of measurement"), item.UnitOfMeasurement),
                 (Localize("Mărime", "Size"), item.Size),
                 (Localize("Culoare", "Color"), item.Color)
             })
@@ -459,21 +480,27 @@ internal sealed class OfferPdfTemplate(OfferPdfData offer, OfferPdfOptions optio
                 // Apply the soft page break to the whole row so names and amounts move together.
                 // Unlike ShowEntire, this still lets an exceptionally tall description span pages.
                 table.Cell().ColumnSpan(6).PreventPageBreak().BorderBottom(0.6f).BorderColor(Rule)
-                    .PaddingVertical(10).Row(row =>
+                    .PaddingVertical(10).Column(line =>
                 {
-                    Cell(row.ConstantItem(numberWidth)).AlignCenter().Text(item.Number.ToString(Culture));
-                    // Keep product text unconstrained, including words wider than the column.
-                    Cell(row.RelativeItem(2.9f)).Element(product => ComposeProductDetails(product, item));
-                    Cell(row.RelativeItem(1.3f)).AlignRight().Text(Money(item.UnitPrice)).FontSize(options.FontSize * 0.9f);
-                    Cell(row.RelativeItem(0.75f)).AlignCenter().Text(item.Quantity.ToString("0.############################", Culture))
-                        .FontSize(options.FontSize * 0.9f);
-                    Cell(row.RelativeItem(1.25f)).AlignRight().Column(vat =>
+                    if (item.HasDiscount)
+                        line.Item().PaddingLeft(numberWidth + 14).PaddingRight(5)
+                            .Element(discount => ComposeItemDiscount(discount, item));
+                    line.Item().Row(row =>
                     {
-                        vat.Item().Text(Money(item.VatAmount)).FontSize(options.FontSize * 0.9f);
-                        if (mixedRates)
-                            vat.Item().AlignRight().Text($"({Rate(item.VatRate)}%)").FontSize(options.FontSize * 0.8f).FontColor(Muted);
+                        Cell(row.ConstantItem(numberWidth)).AlignCenter().Text(item.Number.ToString(Culture));
+                        // Keep product text unconstrained, including words wider than the column.
+                        Cell(row.RelativeItem(2.9f)).Element(product => ComposeProductDetails(product, item));
+                        Cell(row.RelativeItem(1.3f)).AlignRight().Text(Money(item.UnitPrice)).FontSize(options.FontSize * 0.9f);
+                        Cell(row.RelativeItem(0.75f)).AlignCenter().Text(item.Quantity.ToString("0.############################", Culture))
+                            .FontSize(options.FontSize * 0.9f);
+                        Cell(row.RelativeItem(1.25f)).AlignRight().Column(vat =>
+                        {
+                            vat.Item().Text(Money(item.VatAmount)).FontSize(options.FontSize * 0.9f);
+                            if (mixedRates)
+                                vat.Item().AlignRight().Text($"({Rate(item.VatRate)}%)").FontSize(options.FontSize * 0.8f).FontColor(Muted);
+                        });
+                        Cell(row.RelativeItem(1.35f)).AlignRight().Text(Money(item.Total)).FontSize(options.FontSize * 0.9f);
                     });
-                    Cell(row.RelativeItem(1.35f)).AlignRight().Text(Money(item.Total)).FontSize(options.FontSize * 0.9f);
                 });
             }
         });
@@ -485,11 +512,14 @@ internal sealed class OfferPdfTemplate(OfferPdfData offer, OfferPdfOptions optio
     {
         container.Column(column =>
         {
-            SummaryRow(Localize("Subtotal fără T.V.A.", "Subtotal excl. VAT"), offer.Subtotal);
+            ComposeGeneralDiscountSummary(column, classic: true);
+            SummaryRow(SubtotalLabel, offer.Subtotal);
             var rates = offer.Items.Select(item => item.VatRate).Distinct().ToArray();
             var vatLabel = Localize("Valoare T.V.A.", "VAT amount");
             if (rates.Length == 1)
                 vatLabel += $" ({Rate(rates[0])}%)";
+            if (offer.HasGeneralDiscount)
+                vatLabel += Localize(" după reducere", " after discount");
             SummaryRow(vatLabel, offer.VatTotal);
             column.Item().Background(Primary).PaddingHorizontal(10).PaddingVertical(10).Row(row =>
             {
@@ -540,11 +570,14 @@ internal sealed class OfferPdfTemplate(OfferPdfData offer, OfferPdfOptions optio
 
     private void ComposePlainSummary(ColumnDescriptor column)
     {
-        SummaryRow(Localize("Subtotal fără T.V.A.", "Subtotal excl. VAT"), offer.Subtotal);
+        ComposeGeneralDiscountSummary(column);
+        SummaryRow(SubtotalLabel, offer.Subtotal);
         var rates = offer.Items.Select(item => item.VatRate).Distinct().ToArray();
         var vatLabel = Localize("Valoare T.V.A.", "VAT amount");
         if (rates.Length == 1)
             vatLabel += $" ({Rate(rates[0])}%)";
+        if (offer.HasGeneralDiscount)
+            vatLabel += Localize(" după reducere", " after discount");
         SummaryRow(vatLabel, offer.VatTotal);
 
         void SummaryRow(string label, decimal amount)
@@ -553,6 +586,34 @@ internal sealed class OfferPdfTemplate(OfferPdfData offer, OfferPdfOptions optio
             {
                 row.RelativeItem().Text(label).FontColor(Muted);
                 row.RelativeItem().AlignRight().Text(Money(amount)).SemiBold();
+            });
+        }
+    }
+
+    private string SubtotalLabel => Localize("Subtotal fără T.V.A.", "Subtotal excl. VAT")
+        + (offer.HasGeneralDiscount ? Localize(" după reducere", " after discount") : string.Empty);
+
+    private void ComposeGeneralDiscountSummary(ColumnDescriptor column, bool classic = false)
+    {
+        if (!offer.HasGeneralDiscount)
+            return;
+
+        var discount = offer.GeneralDiscount!;
+        var value = discount.ValueType == DiscountValueType.Percentage ? $"{Rate(discount.Value)}%" : Money(discount.Value);
+        AddRow(Localize("Total înainte de reducerea generală", "Total before general discount"),
+            offer.TotalBeforeGeneralDiscount, Muted);
+        AddRow($"{Localize("Reducere generală", "General discount")} ({value})",
+            -offer.GeneralDiscountAmount, DiscountInk);
+
+        void AddRow(string label, decimal amount, Color color)
+        {
+            IContainer item = column.Item();
+            if (classic)
+                item = item.BorderBottom(0.6f).BorderColor(Rule).PaddingHorizontal(10);
+            item.PaddingVertical(classic ? 9 : 5).Row(row =>
+            {
+                row.RelativeItem(1.4f).Text(label).FontColor(color);
+                row.RelativeItem().AlignRight().Text(Money(amount)).SemiBold().FontColor(color);
             });
         }
     }

@@ -83,59 +83,76 @@
                             <AbsoluteLayout>
                             <ScrollView x:Name="TableViewport" Orientation="Horizontal" AbsoluteLayout.LayoutBounds="0,0,1,1" AbsoluteLayout.LayoutFlags="All"
                                         HorizontalScrollBarVisibility="Always" VerticalScrollBarVisibility="Never">
-                                <Grid x:Name="TableContent" RowDefinitions="64,*" WidthRequest="1520">
-                                    <Grid ColumnDefinitions="56,*,270,180,190,130,130,180,96" ColumnSpacing="1" BackgroundColor="#E0E7EF">
-                                        <BoxView Grid.ColumnSpan="9" Color="#EEF2F7" />
+                                <Grid x:Name="TableContent" RowDefinitions="64,*" WidthRequest="1640">
+                                    <Grid ColumnDefinitions="56,*,270,180,120,190,130,130,180,96" ColumnSpacing="1" BackgroundColor="#E0E7EF">
+                                        <BoxView Grid.ColumnSpan="10" Color="#EEF2F7" />
                                         <Label Text="#" Style="{StaticResource TableHeaderStyle}" />
                                         <Label Grid.Column="1" Text="{DynamicResource Item}" Style="{StaticResource TableHeaderStyle}" />
                                         <Label Grid.Column="2" Text="{DynamicResource Size}" Style="{StaticResource TableHeaderStyle}" />
                                         <Label Grid.Column="3" Text="{DynamicResource Color}" Style="{StaticResource TableHeaderStyle}" />
-                                        <Label Grid.Column="4" Text="{DynamicResource UnitPriceHeader}" Style="{StaticResource TableHeaderStyle}" LineBreakMode="WordWrap" HorizontalTextAlignment="Center" />
-                                        <Label Grid.Column="5" Text="{DynamicResource Quantity}" Style="{StaticResource TableHeaderStyle}" HorizontalTextAlignment="Center" />
-                                        <Label Grid.Column="6" Text="{Binding VatHeaderText}" Style="{StaticResource TableHeaderStyle}" LineBreakMode="WordWrap" HorizontalTextAlignment="Center" />
-                                        <Label Grid.Column="7" Text="{DynamicResource TotalHeader}" Style="{StaticResource TableHeaderStyle}" LineBreakMode="WordWrap" HorizontalTextAlignment="Center" />
-                                        <Label Grid.Column="8" Text="{DynamicResource Actions}" Style="{StaticResource TableHeaderStyle}" HorizontalTextAlignment="Center" Padding="8,0" />
-                                        <BoxView Grid.ColumnSpan="9" Color="#DEE6EF" HeightRequest="1" VerticalOptions="End" />
+                                        <Label Grid.Column="4" Text="{DynamicResource UnitOfMeasurement}" Style="{StaticResource TableHeaderStyle}" LineBreakMode="WordWrap" HorizontalTextAlignment="Center" Padding="8,0" />
+                                        <Label Grid.Column="5" Text="{DynamicResource UnitPriceHeader}" Style="{StaticResource TableHeaderStyle}" LineBreakMode="WordWrap" HorizontalTextAlignment="Center" />
+                                        <Label Grid.Column="6" Text="{DynamicResource Quantity}" Style="{StaticResource TableHeaderStyle}" HorizontalTextAlignment="Center" />
+                                        <Label Grid.Column="7" Text="{Binding VatHeaderText}" Style="{StaticResource TableHeaderStyle}" LineBreakMode="WordWrap" HorizontalTextAlignment="Center" />
+                                        <Label Grid.Column="8" Text="{DynamicResource TotalHeader}" Style="{StaticResource TableHeaderStyle}" LineBreakMode="WordWrap" HorizontalTextAlignment="Center" />
+                                        <Label Grid.Column="9" Text="{DynamicResource Actions}" Style="{StaticResource TableHeaderStyle}" HorizontalTextAlignment="Center" Padding="8,0" />
+                                        <BoxView Grid.ColumnSpan="10" Color="#DEE6EF" HeightRequest="1" VerticalOptions="End" />
                                     </Grid>
                                     <CollectionView x:Name="ItemsTable" Grid.Row="1" ItemsSource="{Binding Items}"
-                                                    SelectionMode="None" ItemSizingStrategy="MeasureFirstItem"
+                                                    SelectionMode="None" ItemSizingStrategy="MeasureAllItems"
                                                     VerticalScrollBarVisibility="Always" HorizontalScrollBarVisibility="Never"
                                                     BackgroundColor="White">
                                         <CollectionView.ItemsLayout>
                                             <LinearItemsLayout Orientation="Vertical" ItemSpacing="0" />
                                         </CollectionView.ItemsLayout>
-                                        <CollectionView.EmptyView>
-                                            <VerticalStackLayout Padding="24,32" Spacing="8" HorizontalOptions="Center" VerticalOptions="Center">
-                                                <Label Text="{DynamicResource EmptyOfferTitle}" FontSize="19" FontAttributes="Bold" HorizontalTextAlignment="Center" />
-                                                <Label Text="{DynamicResource EmptyOfferHint}" TextColor="{StaticResource MutedInk}" HorizontalTextAlignment="Center" />
-                                            </VerticalStackLayout>
-                                        </CollectionView.EmptyView>
                                         <CollectionView.ItemTemplate>
                                             <DataTemplate x:DataType="models:OfferLineItem">
-                                                <Grid ColumnDefinitions="56,*,270,180,190,130,130,180,96" HeightRequest="56" ColumnSpacing="1">
+                                                <Grid RowDefinitions="Auto,56">
+                                                <Grid ColumnDefinitions="56,*,270,180,120,190,130,130,180,96" ColumnSpacing="1"
+                                                      IsVisible="{Binding HasDiscount}" BackgroundColor="#FFF4F2" MinimumHeightRequest="36"
+                                                      AutomationId="ItemDiscountRow">
+                                                    <HorizontalStackLayout Grid.Column="1" Grid.ColumnSpan="6" Margin="32,8,16,8" Spacing="8">
+                                                        <Label Text="{DynamicResource Discount}" TextColor="#B42318" FontSize="14" />
+                                                        <Label Text="{Binding DiscountDescription}" TextColor="#B42318" FontSize="14" />
+                                                    </HorizontalStackLayout>
+                                                    <Label Grid.Column="7" Text="{Binding DiscountVatAmountText}" Style="{StaticResource TableCellStyle}"
+                                                           TextColor="#B42318" FontSize="14" HorizontalTextAlignment="End" />
+                                                    <Label Grid.Column="8" Text="{Binding DiscountAmountText}" Style="{StaticResource TableCellStyle}"
+                                                           TextColor="#B42318" FontSize="14" HorizontalTextAlignment="End" />
+                                                </Grid>
+                                                <Grid Grid.Row="1" ColumnDefinitions="56,*,270,180,120,190,130,130,180,96" HeightRequest="56" ColumnSpacing="1">
                                                     <Label Text="{Binding Number}" Style="{StaticResource TableCellStyle}" Padding="8,0" />
                                                     <Label Grid.Column="1" Text="{Binding Name}" Style="{StaticResource TableCellStyle}"
                                                            ToolTipProperties.Text="{Binding Name}" />
-                                                    <Border Grid.Column="2" Style="{StaticResource InputBorderStyle}" Margin="8,7" HeightRequest="40">
+                                                    <Border Grid.Column="2" Style="{StaticResource InputBorderStyle}" Margin="8,7" HeightRequest="40" IsVisible="{Binding IsProduct}">
                                                         <controls:DropdownPicker Title="{DynamicResource SelectSize}" ItemsSource="{Binding AvailableSizes}"
                                                                 SelectedItem="{Binding SelectedSize, Mode=TwoWay}" IsEnabled="{Binding HasSizeOptions}"
                                                                 FontSize="15" Margin="8,0" SemanticProperties.Description="{DynamicResource ProductSize}"
                                                                 ToolTipProperties.Text="{Binding SelectedSize}" />
                                                     </Border>
-                                                    <Border Grid.Column="3" Style="{StaticResource InputBorderStyle}" Margin="8,7" HeightRequest="40">
+                                                    <Border Grid.Column="3" Style="{StaticResource InputBorderStyle}" Margin="8,7" HeightRequest="40" IsVisible="{Binding IsProduct}">
                                                         <controls:DropdownPicker Title="{DynamicResource SelectColor}" ItemsSource="{Binding AvailableColors}"
                                                                 SelectedItem="{Binding SelectedColor, Mode=TwoWay}" IsEnabled="{Binding HasColorOptions}"
                                                                 FontSize="15" Margin="8,0" SemanticProperties.Description="{DynamicResource ProductColor}" />
                                                     </Border>
-                                                    <Label Grid.Column="4" Text="{Binding UnitPriceText}" Style="{StaticResource TableCellStyle}" HorizontalTextAlignment="End" />
-                                                    <controls:QuantityInput Grid.Column="5" Text="{Binding QuantityText}" HasError="{Binding HasQuantityError}"
+                                                    <Label Grid.Column="4" Text="{Binding UnitOfMeasurement}" IsVisible="{Binding HasUnitOfMeasurement}"
+                                                           Style="{StaticResource TableCellStyle}" HorizontalTextAlignment="Center" Padding="8,0"
+                                                           ToolTipProperties.Text="{Binding UnitOfMeasurement}" />
+                                                    <Label Grid.Column="5" Text="{Binding UnitPriceText}" Style="{StaticResource TableCellStyle}" HorizontalTextAlignment="End" />
+                                                    <controls:QuantityInput Grid.Column="6" Text="{Binding QuantityText}" HasError="{Binding HasQuantityError}"
                                                                             Margin="16,7" HeightRequest="40" />
-                                                    <Label Grid.Column="6" Text="{Binding VatAmountText}" Style="{StaticResource TableCellStyle}" HorizontalTextAlignment="End" />
-                                                    <Label Grid.Column="7" Text="{Binding TotalText}" Style="{StaticResource TableCellStyle}" HorizontalTextAlignment="End" />
-                                                    <ImageButton Grid.Column="8" Source="trash.png" BackgroundColor="Transparent" WidthRequest="44" HeightRequest="44"
-                                                                 HorizontalOptions="Center" VerticalOptions="Center" Padding="12" CornerRadius="5"
-                                                                 Clicked="OnDeleteItemClicked" ToolTipProperties.Text="{DynamicResource RemoveItem}"
-                                                                 SemanticProperties.Description="{Binding RemoveDescription}" />
+                                                    <Label Grid.Column="7" Text="{Binding VatAmountText}" Style="{StaticResource TableCellStyle}" HorizontalTextAlignment="End" />
+                                                    <Label Grid.Column="8" Text="{Binding TotalText}" Style="{StaticResource TableCellStyle}" HorizontalTextAlignment="End" />
+                                                    <HorizontalStackLayout Grid.Column="9" HorizontalOptions="Center" VerticalOptions="Center" Spacing="0">
+                                                        <ImageButton Source="percentage.png" BackgroundColor="Transparent" WidthRequest="44" HeightRequest="44"
+                                                                     Padding="12" CornerRadius="5" Clicked="OnItemDiscountClicked" AutomationId="EditItemDiscount"
+                                                                     ToolTipProperties.Text="{DynamicResource ItemDiscount}"
+                                                                     SemanticProperties.Description="{Binding DiscountActionDescription}" />
+                                                        <ImageButton Source="trash.png" BackgroundColor="Transparent" WidthRequest="44" HeightRequest="44"
+                                                                     Padding="12" CornerRadius="5" Clicked="OnDeleteItemClicked"
+                                                                     ToolTipProperties.Text="{DynamicResource RemoveItem}"
+                                                                     SemanticProperties.Description="{Binding RemoveDescription}" />
+                                                    </HorizontalStackLayout>
                                                     <BoxView Grid.Column="1" Color="#E7ECF2" WidthRequest="1" HorizontalOptions="Start" />
                                                     <BoxView Grid.Column="2" Color="#E7ECF2" WidthRequest="1" HorizontalOptions="Start" />
                                                     <BoxView Grid.Column="3" Color="#E7ECF2" WidthRequest="1" HorizontalOptions="Start" />
@@ -144,13 +161,28 @@
                                                     <BoxView Grid.Column="6" Color="#E7ECF2" WidthRequest="1" HorizontalOptions="Start" />
                                                     <BoxView Grid.Column="7" Color="#E7ECF2" WidthRequest="1" HorizontalOptions="Start" />
                                                     <BoxView Grid.Column="8" Color="#E7ECF2" WidthRequest="1" HorizontalOptions="Start" />
-                                                    <BoxView Grid.ColumnSpan="9" Color="#E4EAF1" HeightRequest="1" VerticalOptions="End" />
+                                                    <BoxView Grid.Column="9" Color="#E7ECF2" WidthRequest="1" HorizontalOptions="Start" />
+                                                    <BoxView Grid.ColumnSpan="10" Color="#E4EAF1" HeightRequest="1" VerticalOptions="End" />
+                                                </Grid>
                                                 </Grid>
                                             </DataTemplate>
                                         </CollectionView.ItemTemplate>
                                     </CollectionView>
                                 </Grid>
                             </ScrollView>
+                            <!-- Keep empty-state guidance within the visible viewport, outside the wide table. -->
+                            <Grid AbsoluteLayout.LayoutBounds="0,0,1,1" AbsoluteLayout.LayoutFlags="All"
+                                  Margin="0,64,0,0" InputTransparent="True" IsVisible="False">
+                                <Grid.Triggers>
+                                    <DataTrigger TargetType="Grid" Binding="{Binding Items.Count}" Value="0">
+                                        <Setter Property="IsVisible" Value="True" />
+                                    </DataTrigger>
+                                </Grid.Triggers>
+                                <VerticalStackLayout Padding="24,16" Spacing="8" VerticalOptions="Center">
+                                    <Label Text="{DynamicResource EmptyOfferTitle}" FontSize="19" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                                    <Label Text="{DynamicResource EmptyOfferHint}" TextColor="{StaticResource MutedInk}" HorizontalTextAlignment="Center" />
+                                </VerticalStackLayout>
+                            </Grid>
                             </AbsoluteLayout>
                         </Border>
                     </Grid>
@@ -158,12 +190,17 @@
             </Grid>
 
             <Border x:Name="ActionsCard" Grid.Column="1" Style="{StaticResource CardStyle}">
-                <Grid x:Name="ActionsLayout" RowDefinitions="76,56,56,*" RowSpacing="18" ColumnSpacing="12">
+                <Grid x:Name="ActionsLayout" RowDefinitions="76,56,56,56,56,*" RowSpacing="18" ColumnSpacing="12">
                     <Button x:Name="GenerateButton" Text="{DynamicResource GenerateOffer}" ImageSource="document_white.png"
                             TextColor="White" BackgroundColor="#109D50" BorderColor="#0C9549"
                             Clicked="OnGenerateClicked" Padding="16,12" />
-                    <Button x:Name="ResetButton" Grid.Row="1" Text="{DynamicResource Reset}" ImageSource="reset.png" Command="{Binding ResetCommand}" />
-                    <Button x:Name="ExitButton" Grid.Row="2" Text="{DynamicResource Exit}" ImageSource="close.png" Clicked="OnExitClicked" />
+                    <Button x:Name="AddServiceButton" Grid.Row="1" Text="{DynamicResource AddServiceToOffer}" ImageSource="plus.png"
+                            BackgroundColor="{StaticResource Accent}" BorderColor="#0873E5" TextColor="White"
+                            AutomationId="AddServiceToOffer" Padding="12,8" Clicked="OnAddServiceClicked" />
+                    <Button x:Name="DiscountButton" Grid.Row="2" Text="{DynamicResource Discount}" ImageSource="percentage.png"
+                            AutomationId="EditOfferDiscount" Clicked="OnOfferDiscountClicked" />
+                    <Button x:Name="ResetButton" Grid.Row="3" Text="{DynamicResource Reset}" ImageSource="reset.png" Command="{Binding ResetCommand}" />
+                    <Button x:Name="ExitButton" Grid.Row="4" Text="{DynamicResource Exit}" ImageSource="close.png" Clicked="OnExitClicked" />
                 </Grid>
             </Border>
         </Grid>
@@ -179,7 +216,11 @@
                         BackgroundColor="Transparent" BorderWidth="0" Clicked="OnLastColumnsClicked"
                         SemanticProperties.Description="{DynamicResource ShowLastColumns}" />
             </HorizontalStackLayout>
-            <Label Grid.Column="2" Text="{Binding GrandTotalSummary}" TextColor="{StaticResource MutedInk}" FontSize="14" />
+            <HorizontalStackLayout Grid.Column="2" Spacing="12">
+                <Label Text="{Binding GeneralDiscountSummary}" IsVisible="{Binding HasGeneralDiscount}"
+                       TextColor="#B42318" FontSize="14" AutomationId="GeneralDiscountSummary" />
+                <Label Text="{Binding GrandTotalSummary}" TextColor="{StaticResource MutedInk}" FontSize="14" />
+            </HorizontalStackLayout>
             <Label Grid.Column="3" Text="v1.0.0" TextColor="{StaticResource MutedInk}" FontSize="14" />
         </Grid>
     </Grid>

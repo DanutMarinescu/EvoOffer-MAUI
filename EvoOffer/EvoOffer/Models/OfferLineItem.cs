@@ -14,6 +14,24 @@ public sealed class OfferLineItem : ObservableObject
     private string _unspecifiedColor;
     private CatalogVariant _selectedVariant;
     private bool _updatingSelection;
+    private bool _hasAmountError;
+    private DiscountDefinition? _discount;
+
+    public OfferLineItem(int number, ServiceDefinition service, decimal quantity, decimal vatRate = VatRateValue.Default)
+        : this(number, CreateServiceItem(service), quantity, vatRate)
+    {
+        UnitOfMeasurement = service.UnitOfMeasurement.Trim();
+        IsService = true;
+    }
+
+    private static CatalogItem CreateServiceItem(ServiceDefinition service)
+    {
+        ArgumentNullException.ThrowIfNull(service);
+        if (!new ServiceDraft(service).TryBuild(out var snapshot))
+            throw new ArgumentException(LocalizationService.Get("InvalidServiceValidation"), nameof(service));
+        // A service's saved net price is authoritative; it has no imported gross price.
+        return new CatalogItem(string.Empty, snapshot.Name, snapshot.PriceExcludingVat);
+    }
 
     public OfferLineItem(int number, CatalogItem item, decimal quantity, decimal vatRate = VatRateValue.Default)
     {
@@ -47,7 +65,12 @@ public sealed class OfferLineItem : ObservableObject
 
     public string Category { get; }
     public string Name { get; }
+    public string UnitOfMeasurement { get; } = string.Empty;
+    public bool HasUnitOfMeasurement => UnitOfMeasurement.Length > 0;
+    public bool IsService { get; }
+    public bool IsProduct => !IsService;
     public string RemoveDescription => LocalizationService.Format("RemoveProductDescription", Name);
+    public string DiscountActionDescription => LocalizationService.Format("DiscountActionDescription", Name);
     public decimal UnitPrice => _selectedVariant.UnitPrice;
     public string UnitPriceText => UnitPrice.ToString("N2", LocalizationService.Culture);
     public CatalogVariant SelectedVariant => _selectedVariant;
@@ -149,12 +172,16 @@ public sealed class OfferLineItem : ObservableObject
                 return;
 
             var valid = QuantityValue.TryParse(value, out var quantity);
+            _hasAmountError = valid && IsService && !CanCalculateServiceAmount(quantity);
+            valid &= !_hasAmountError;
             if (_hasQuantityError != !valid)
             {
                 _hasQuantityError = !valid;
                 OnPropertyChanged(nameof(HasQuantityError));
                 OnPropertyChanged(nameof(QuantityValidationMessage));
             }
+            else if (!valid)
+                OnPropertyChanged(nameof(QuantityValidationMessage));
 
             if (valid && _quantity != quantity)
             {
@@ -166,19 +193,73 @@ public sealed class OfferLineItem : ObservableObject
     }
 
     public bool HasQuantityError => _hasQuantityError;
-    public string QuantityValidationMessage => HasQuantityError ? QuantityValue.ValidationMessage : string.Empty;
-    // Round each line's net amount and VAT so displayed amounts add up to the total.
-    public decimal NetTotal => decimal.Round(UnitPrice * Quantity, 2, MidpointRounding.AwayFromZero);
+    public string QuantityValidationMessage => !HasQuantityError ? string.Empty
+        : _hasAmountError ? LocalizationService.Get("ServiceAmountTooLarge") : QuantityValue.ValidationMessage;
+
+    private bool CanCalculateServiceAmount(decimal quantity)
+    {
+        try
+        {
+            var net = decimal.Round(UnitPrice * quantity, 2, MidpointRounding.AwayFromZero);
+            var vat = decimal.Round(net * VatRate / 100m, 2, MidpointRounding.AwayFromZero);
+            _ = net + vat;
+            return true;
+        }
+        catch (OverflowException)
+        {
+            return false;
+        }
+    }
+    public DiscountDefinition? Discount
+    {
+        get => _discount;
+        set
+        {
+            if (value is not null)
+            {
+                var baseAmount = value.Scope == DiscountScope.PerUnit ? OriginalTotal / Quantity : OriginalTotal;
+                if (!value.IsValid || (value.ValueType == DiscountValueType.Absolute && value.Value > baseAmount))
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                if (value.Value == 0m)
+                    value = null;
+            }
+            if (!SetProperty(ref _discount, value))
+                return;
+            OnPropertyChanged(nameof(HasDiscount));
+            OnPropertyChanged(nameof(DiscountDescription));
+            NotifyAmounts();
+        }
+    }
+
+    public bool HasDiscount => Discount is not null;
+    public string DiscountDescription => Discount?.Describe() ?? string.Empty;
+    public decimal DiscountAmount => Discount?.CalculateAmount(OriginalTotal, Quantity) ?? 0m;
+    public string DiscountAmountText => $"−{DiscountAmount.ToString("N2", LocalizationService.Culture)} RON";
+    public decimal DiscountNetAmount => OriginalNetTotal - NetTotal;
+    public decimal DiscountVatAmount => OriginalVatAmount - VatAmount;
+    public string DiscountVatAmountText => $"−{DiscountVatAmount.ToString("N2", LocalizationService.Culture)}";
+
+    // Preserve the undiscounted source amounts, including imported gross prices.
+    public decimal OriginalNetTotal => decimal.Round(UnitPrice * Quantity, 2, MidpointRounding.AwayFromZero);
     // Imported gross prices are authoritative. Derive VAT as the remainder so
     // rounding the net amount cannot change a 100 RON CSV price to 99.99 RON.
     private decimal ImportedGrossTotal => decimal.Round(
         (_selectedVariant.ImportedVatRate == VatRate ? _selectedVariant.PriceIncludingVat : UnitPrice * (1m + VatRate / 100m))
         * Quantity, 2, MidpointRounding.AwayFromZero);
-    public decimal VatAmount => _selectedVariant.ImportedVatRate.HasValue
-        ? ImportedGrossTotal - NetTotal
-        : decimal.Round(NetTotal * VatRate / 100m, 2, MidpointRounding.AwayFromZero);
+    public decimal OriginalVatAmount => _selectedVariant.ImportedVatRate.HasValue
+        ? ImportedGrossTotal - OriginalNetTotal
+        : decimal.Round(OriginalNetTotal * VatRate / 100m, 2, MidpointRounding.AwayFromZero);
+    public decimal OriginalTotal => _selectedVariant.ImportedVatRate.HasValue
+        ? ImportedGrossTotal : OriginalNetTotal + OriginalVatAmount;
+
+    // Allocate the gross reduction proportionally between net and VAT. Keep
+    // VAT as the remainder so every displayed line still reconciles exactly.
+    public decimal NetTotal => DiscountAmount == 0m ? OriginalNetTotal
+        : Total == 0m ? 0m
+        : decimal.Round(OriginalNetTotal * (Total / OriginalTotal), 2, MidpointRounding.AwayFromZero);
+    public decimal VatAmount => DiscountAmount == 0m ? OriginalVatAmount : Total - NetTotal;
     public string VatAmountText => VatAmount.ToString("N2", LocalizationService.Culture);
-    public decimal Total => _selectedVariant.ImportedVatRate.HasValue ? ImportedGrossTotal : NetTotal + VatAmount;
+    public decimal Total => OriginalTotal - DiscountAmount;
     public string TotalText => Total.ToString("N2", LocalizationService.Culture);
 
     public void AdjustQuantity(int amount) => Quantity += amount;
@@ -205,6 +286,10 @@ public sealed class OfferLineItem : ObservableObject
             SetProperty(ref _quantityText, QuantityValue.Format(Quantity), nameof(QuantityText));
         OnPropertyChanged(nameof(QuantityValidationMessage));
         OnPropertyChanged(nameof(RemoveDescription));
+        OnPropertyChanged(nameof(DiscountActionDescription));
+        OnPropertyChanged(nameof(DiscountDescription));
+        OnPropertyChanged(nameof(DiscountAmountText));
+        OnPropertyChanged(nameof(DiscountVatAmountText));
         OnPropertyChanged(nameof(UnitPriceText));
         OnPropertyChanged(nameof(VatAmountText));
         OnPropertyChanged(nameof(TotalText));
@@ -212,6 +297,14 @@ public sealed class OfferLineItem : ObservableObject
 
     private void NotifyAmounts()
     {
+        OnPropertyChanged(nameof(OriginalNetTotal));
+        OnPropertyChanged(nameof(OriginalVatAmount));
+        OnPropertyChanged(nameof(OriginalTotal));
+        OnPropertyChanged(nameof(DiscountAmount));
+        OnPropertyChanged(nameof(DiscountAmountText));
+        OnPropertyChanged(nameof(DiscountNetAmount));
+        OnPropertyChanged(nameof(DiscountVatAmount));
+        OnPropertyChanged(nameof(DiscountVatAmountText));
         OnPropertyChanged(nameof(NetTotal));
         OnPropertyChanged(nameof(VatAmount));
         OnPropertyChanged(nameof(VatAmountText));

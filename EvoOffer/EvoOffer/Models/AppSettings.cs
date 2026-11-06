@@ -26,6 +26,7 @@ public sealed class AppSettings
     public string PdfTextColor { get; set; } = PdfColorValue.DefaultText;
     public decimal VatRate { get; set; } = VatRateValue.Default;
     public string DefaultMessage { get; set; } = MainViewModel.GetDefaultMessage(Romanian);
+    public List<ServiceDefinition> Services { get; set; } = [];
 
     public void Normalize()
     {
@@ -49,6 +50,13 @@ public sealed class AppSettings
         PdfTextColor = PdfColorValue.Normalize(PdfTextColor, PdfColorValue.DefaultText);
         if (!VatRateValue.IsValid(VatRate))
             VatRate = VatRateValue.Default;
+        Services ??= [];
+        Services.RemoveAll(service => service is null);
+        foreach (var service in Services)
+        {
+            service.Name = service.Name?.Trim() ?? string.Empty;
+            service.UnitOfMeasurement = service.UnitOfMeasurement?.Trim() ?? string.Empty;
+        }
         // Upgrade the old English stock message, but never translate an edited
         // message (including an intentionally empty one).
         if (DefaultMessage is null || MainViewModel.IsDefaultMessage(DefaultMessage))

@@ -30,6 +30,7 @@ public sealed class MainViewModel : ObservableObject
     private string? _statusKey = "StatusReady";
     private object[] _statusArguments = [];
     private decimal _vatRate;
+    private DiscountDefinition? _generalDiscount;
 
     public MainViewModel(decimal vatRate = VatRateValue.Default, ProductCatalog? catalog = null)
     {
@@ -147,7 +148,33 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
-    public decimal GrandTotal => Items.Sum(item => item.Total);
+    public DiscountDefinition? GeneralDiscount
+    {
+        get => _generalDiscount;
+        set
+        {
+            if (value is not null)
+            {
+                if (!value.IsValid || value.Scope != DiscountScope.ItemTotal
+                    || (value.ValueType == DiscountValueType.Absolute && value.Value > TotalBeforeGeneralDiscount))
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                if (value.Value == 0m)
+                    value = null;
+            }
+            if (SetProperty(ref _generalDiscount, value))
+                NotifyOfferTotals();
+        }
+    }
+
+    public bool HasGeneralDiscount => GeneralDiscount is not null;
+    public string GeneralDiscountDescription => GeneralDiscount?.DescribeValue() ?? string.Empty;
+    public decimal TotalBeforeGeneralDiscount => Items.Sum(item => item.Total);
+    public decimal GeneralDiscountAmount => GeneralDiscount?.CalculateAmount(TotalBeforeGeneralDiscount) ?? 0m;
+    public string GeneralDiscountSummary => HasGeneralDiscount
+        ? LocalizationService.Format("GeneralDiscountSummary", GeneralDiscountDescription,
+            GeneralDiscountAmount.ToString("N2", LocalizationService.Culture))
+        : string.Empty;
+    public decimal GrandTotal => TotalBeforeGeneralDiscount - GeneralDiscountAmount;
     public string GrandTotalText => GrandTotal.ToString("N2", LocalizationService.Culture);
     public string GrandTotalSummary => LocalizationService.Format("GrandTotalSummary", GrandTotalText);
     public ICommand AddCommand { get; }
@@ -250,6 +277,43 @@ public sealed class MainViewModel : ObservableObject
         return false;
     }
 
+    public bool TryAddService(ServiceDefinition service, string? quantityText)
+    {
+        if (service is null || !new ServiceDraft(service).TryBuild(out var snapshot))
+        {
+            SetStatus("InvalidServiceValidation");
+            return false;
+        }
+        if (!QuantityValue.TryParse(quantityText, out var quantity))
+        {
+            SetStatus("QuantityValidation");
+            return false;
+        }
+
+        OfferLineItem line;
+        try
+        {
+            // Leave room for later legal quantity and VAT edits. VAT arithmetic
+            // multiplies the net amount by the rate before dividing by 100.
+            var maximumNet = decimal.Round(snapshot.PriceExcludingVat * QuantityValue.Maximum,
+                2, MidpointRounding.AwayFromZero);
+            _ = maximumNet * 100m;
+            line = new OfferLineItem(Items.Count + 1, snapshot, quantity, VatRate);
+            // Check both the new line and the combined offer before collection
+            // notifications evaluate the totals for the UI.
+            _ = TotalBeforeGeneralDiscount + line.Total;
+        }
+        catch (OverflowException)
+        {
+            SetStatus("ServiceAmountTooLarge");
+            return false;
+        }
+
+        Items.Add(line);
+        SetStatus("ProductAdded", line.Name);
+        return true;
+    }
+
     private void AddItem()
     {
         if (SelectedItem is null || !AvailableItems.Contains(SelectedItem))
@@ -282,6 +346,7 @@ public sealed class MainViewModel : ObservableObject
 
     private void Reset()
     {
+        GeneralDiscount = null;
         Items.Clear();
         ClientName = string.Empty;
         CustomText = DefaultMessage;
@@ -359,6 +424,11 @@ public sealed class MainViewModel : ObservableObject
 
     private void NotifyOfferTotals()
     {
+        OnPropertyChanged(nameof(HasGeneralDiscount));
+        OnPropertyChanged(nameof(GeneralDiscountDescription));
+        OnPropertyChanged(nameof(TotalBeforeGeneralDiscount));
+        OnPropertyChanged(nameof(GeneralDiscountAmount));
+        OnPropertyChanged(nameof(GeneralDiscountSummary));
         OnPropertyChanged(nameof(GrandTotal));
         OnPropertyChanged(nameof(GrandTotalText));
         OnPropertyChanged(nameof(GrandTotalSummary));

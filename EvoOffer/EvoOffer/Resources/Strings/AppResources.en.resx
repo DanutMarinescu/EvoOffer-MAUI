@@ -18,6 +18,12 @@
   <data name="Add" xml:space="preserve">
     <value>Add</value>
   </data>
+  <data name="AddService" xml:space="preserve">
+    <value>Add service</value>
+  </data>
+  <data name="AddServiceToOffer" xml:space="preserve">
+    <value>Add service</value>
+  </data>
   <data name="AddressLine1" xml:space="preserve">
     <value>Address line 1</value>
   </data>
@@ -279,6 +285,12 @@
   <data name="DefaultOfferMessageLabel" xml:space="preserve">
     <value>Default offer message</value>
   </data>
+  <data name="DeleteService" xml:space="preserve">
+    <value>Delete service</value>
+  </data>
+  <data name="DeleteServiceDescription" xml:space="preserve">
+    <value>Delete service {0}</value>
+  </data>
   <data name="Email" xml:space="preserve">
     <value>E-mail</value>
   </data>
@@ -292,7 +304,7 @@
     <value>Enter a valid e-mail address, such as name@example.com.</value>
   </data>
   <data name="EmptyOfferHint" xml:space="preserve">
-    <value>Choose an item above and select Add.</value>
+    <value>Choose a product above and select Add, or use Add service.</value>
   </data>
   <data name="EmptyOfferTitle" xml:space="preserve">
     <value>Your offer starts here</value>
@@ -560,6 +572,33 @@ Your previous catalog and settings are unchanged.</value>
   <data name="SelectSize" xml:space="preserve">
     <value>Select size</value>
   </data>
+  <data name="ServiceName" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="ServiceNameRequired" xml:space="preserve">
+    <value>Enter a service name.</value>
+  </data>
+  <data name="ServicePrice" xml:space="preserve">
+    <value>Price excluding VAT (RON)</value>
+  </data>
+  <data name="ServicePriceValidation" xml:space="preserve">
+    <value>Enter a price of zero or more, with up to two decimal places.</value>
+  </data>
+  <data name="ServiceUnit" xml:space="preserve">
+    <value>Unit of measurement</value>
+  </data>
+  <data name="ServiceUnitRequired" xml:space="preserve">
+    <value>Enter a unit of measurement.</value>
+  </data>
+  <data name="Services" xml:space="preserve">
+    <value>Services</value>
+  </data>
+  <data name="ServicesEmpty" xml:space="preserve">
+    <value>No services defined yet.</value>
+  </data>
+  <data name="ServicesHelp" xml:space="preserve">
+    <value>Add services and edit their fields directly. Changes apply with Save settings.</value>
+  </data>
   <data name="Settings" xml:space="preserve">
     <value>Settings</value>
   </data>
@@ -721,5 +760,89 @@ VAT excluded</value>
   </data>
   <data name="VatRateValidation" xml:space="preserve">
     <value>Enter a VAT percentage from 0 to 100, with up to two decimal places.</value>
+  </data>
+  <data name="SelectService" xml:space="preserve">
+    <value>Select a service</value>
+  </data>
+  <data name="SelectServiceHelp" xml:space="preserve">
+    <value>Choose a saved service and set its quantity. You can change the quantity later in the offer.</value>
+  </data>
+  <data name="NoServicesAvailable" xml:space="preserve">
+    <value>No services are available. Add them in Settings first.</value>
+  </data>
+  <data name="InvalidServiceValidation" xml:space="preserve">
+    <value>This service has invalid details. Correct its name, unit and price in Settings.</value>
+  </data>
+  <data name="ServiceAmountTooLarge" xml:space="preserve">
+    <value>The service amount is too large. Reduce its price or quantity.</value>
+  </data>
+  <data name="UnitOfMeasurement" xml:space="preserve">
+    <value>Unit of measurement</value>
+  </data>
+  <data name="Discount" xml:space="preserve">
+    <value>Discount</value>
+  </data>
+  <data name="OfferDiscount" xml:space="preserve">
+    <value>Offer discount</value>
+  </data>
+  <data name="ItemDiscount" xml:space="preserve">
+    <value>Item discount</value>
+  </data>
+  <data name="DiscountPerUnit" xml:space="preserve">
+    <value>Per-unit discount</value>
+  </data>
+  <data name="DiscountItemTotal" xml:space="preserve">
+    <value>Item-total discount</value>
+  </data>
+  <data name="DiscountPercentage" xml:space="preserve">
+    <value>Percentage</value>
+  </data>
+  <data name="DiscountAbsolute" xml:space="preserve">
+    <value>Absolute amount</value>
+  </data>
+  <data name="DiscountPercentageValue" xml:space="preserve">
+    <value>Discount (%)</value>
+  </data>
+  <data name="DiscountAbsoluteValue" xml:space="preserve">
+    <value>Discount (RON, VAT included)</value>
+  </data>
+  <data name="DiscountApplyTo" xml:space="preserve">
+    <value>Apply discount to</value>
+  </data>
+  <data name="DiscountType" xml:space="preserve">
+    <value>Discount type</value>
+  </data>
+  <data name="OfferDiscountHelp" xml:space="preserve">
+    <value>Calculated on the offer total after item discounts.</value>
+  </data>
+  <data name="DiscountVatHelp" xml:space="preserve">
+    <value>Discount amounts include VAT. Existing discounts adjust automatically when quantities or prices change, up to the available total.</value>
+  </data>
+  <data name="DiscountBaseAmount" xml:space="preserve">
+    <value>Amount before discount: {0} RON (VAT included)</value>
+  </data>
+  <data name="DiscountPreviewAmount" xml:space="preserve">
+    <value>Discount: −{0} RON · Total after discount: {1} RON</value>
+  </data>
+  <data name="DiscountPercentageValidation" xml:space="preserve">
+    <value>Enter a percentage between 0 and 100, with up to two decimal places.</value>
+  </data>
+  <data name="DiscountAbsoluteValidation" xml:space="preserve">
+    <value>Enter a non-negative amount with up to two decimal places.</value>
+  </data>
+  <data name="DiscountExceedsBaseValidation" xml:space="preserve">
+    <value>The discount cannot exceed {0} RON.</value>
+  </data>
+  <data name="DiscountPerUnitDescription" xml:space="preserve">
+    <value>{0} per unit</value>
+  </data>
+  <data name="DiscountItemTotalDescription" xml:space="preserve">
+    <value>{0} on item total</value>
+  </data>
+  <data name="DiscountActionDescription" xml:space="preserve">
+    <value>Edit discount for {0}</value>
+  </data>
+  <data name="GeneralDiscountSummary" xml:space="preserve">
+    <value>Discount {0}: −{1} RON</value>
   </data>
 </root>

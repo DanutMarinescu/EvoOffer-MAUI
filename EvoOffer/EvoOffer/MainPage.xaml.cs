@@ -11,12 +11,13 @@ public partial class MainPage : ContentPage
 {
     private const string DefaultMessagePreference = "offer_default_message";
     private const string VatRatePreference = "offer_vat_percentage";
-    private const double MinimumTableWidth = 1520;
+    private const double MinimumTableWidth = 1640;
     private readonly MainViewModel _viewModel;
     private readonly IOfferPdfService _pdfService;
     private readonly SettingsStore _settingsStore = new(FileSystem.Current.AppDataDirectory);
     private AppSettings _settings;
     private bool? _usingSidebar;
+    private bool? _usingCompactActions;
     private bool? _usingCompactComposer;
     private bool _openingDialog;
 
@@ -117,9 +118,11 @@ public partial class MainPage : ContentPage
         ClientFields.RowDefinitions[1].Height = shortWindow ? 38 : compact ? 42 : 48;
         ClientFields.RowDefinitions[3].Height = shortWindow ? 56 : compact ? 72 : 104;
 
-        if (_usingSidebar == sidebar)
+        var compactActions = !sidebar && Width < 1020;
+        if (_usingSidebar == sidebar && _usingCompactActions == compactActions)
             return;
         _usingSidebar = sidebar;
+        _usingCompactActions = compactActions;
 
         Workspace.ColumnDefinitions.Clear();
         Workspace.RowDefinitions.Clear();
@@ -137,10 +140,14 @@ public partial class MainPage : ContentPage
             ActionsLayout.RowDefinitions.Add(new RowDefinition { Height = new GridLength(76) });
             ActionsLayout.RowDefinitions.Add(new RowDefinition { Height = new GridLength(56) });
             ActionsLayout.RowDefinitions.Add(new RowDefinition { Height = new GridLength(56) });
+            ActionsLayout.RowDefinitions.Add(new RowDefinition { Height = new GridLength(56) });
+            ActionsLayout.RowDefinitions.Add(new RowDefinition { Height = new GridLength(56) });
             ActionsLayout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Star });
             Place(GenerateButton, 0, 0);
-            Place(ResetButton, 1, 0);
-            Place(ExitButton, 2, 0);
+            Place(AddServiceButton, 1, 0);
+            Place(DiscountButton, 2, 0);
+            Place(ResetButton, 3, 0);
+            Place(ExitButton, 4, 0);
         }
         else
         {
@@ -152,12 +159,31 @@ public partial class MainPage : ContentPage
             Grid.SetRow(ActionsCard, 0);
             ActionsCard.Padding = 10;
             ActionsLayout.RowDefinitions.Add(new RowDefinition { Height = new GridLength(48) });
-            ActionsLayout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1.4, GridUnitType.Star) });
-            ActionsLayout.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
-            ActionsLayout.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
-            Place(GenerateButton, 0, 0);
-            Place(ResetButton, 0, 1);
-            Place(ExitButton, 0, 2);
+            if (compactActions)
+            {
+                ActionsLayout.RowDefinitions.Add(new RowDefinition { Height = new GridLength(48) });
+                ActionsLayout.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+                ActionsLayout.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+                ActionsLayout.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Star });
+                Place(GenerateButton, 0, 0);
+                Place(AddServiceButton, 0, 1);
+                Place(DiscountButton, 0, 2);
+                Place(ResetButton, 1, 0);
+                Place(ExitButton, 1, 1);
+            }
+            else
+            {
+                ActionsLayout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1.5, GridUnitType.Star) });
+                ActionsLayout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1.4, GridUnitType.Star) });
+                ActionsLayout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1.0, GridUnitType.Star) });
+                ActionsLayout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(0.9, GridUnitType.Star) });
+                ActionsLayout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(0.7, GridUnitType.Star) });
+                Place(GenerateButton, 0, 0);
+                Place(AddServiceButton, 0, 1);
+                Place(DiscountButton, 0, 2);
+                Place(ResetButton, 0, 3);
+                Place(ExitButton, 0, 4);
+            }
         }
     }
 
@@ -290,7 +316,8 @@ public partial class MainPage : ContentPage
 #endif
 
             // Snapshot on the UI thread so later edits cannot change the PDF being generated.
-            var offer = new OfferPdfData(_viewModel.ClientName, _viewModel.CustomText, _viewModel.Items, _settings);
+            var offer = new OfferPdfData(_viewModel.ClientName, _viewModel.CustomText, _viewModel.Items, _settings,
+                _viewModel.GeneralDiscount);
             GenerateButton.IsEnabled = false;
             GenerateButton.Text = LocalizationService.Get("Generating");
             _viewModel.SetStatus("StatusGeneratingPdf");
@@ -317,6 +344,50 @@ public partial class MainPage : ContentPage
             previewFile?.Dispose();
             GenerateButton.IsEnabled = true;
             GenerateButton.SetDynamicResource(Button.TextProperty, "GenerateOffer");
+            _openingDialog = false;
+        }
+    }
+
+    private async void OnOfferDiscountClicked(object? sender, EventArgs e) => await OpenDiscountAsync();
+
+    private async void OnItemDiscountClicked(object? sender, EventArgs e)
+    {
+        if (sender is BindableObject { BindingContext: OfferLineItem item })
+            await OpenDiscountAsync(item);
+    }
+
+    private async Task OpenDiscountAsync(OfferLineItem? item = null)
+    {
+        if (_openingDialog)
+            return;
+        _openingDialog = true;
+        try
+        {
+            await Navigation.PushModalAsync(new DiscountPage(_viewModel, item));
+        }
+        finally
+        {
+            _openingDialog = false;
+        }
+    }
+
+    private async void OnAddServiceClicked(object? sender, EventArgs e)
+    {
+        if (_openingDialog)
+            return;
+        _openingDialog = true;
+        try
+        {
+            if (_settings.Services.Count == 0)
+            {
+                await DisplayAlertAsync(LocalizationService.Get("Services"),
+                    LocalizationService.Get("NoServicesAvailable"), LocalizationService.Get("Ok"));
+                return;
+            }
+            await Navigation.PushModalAsync(new ServiceSelectionPage(_settings.Services, _viewModel));
+        }
+        finally
+        {
             _openingDialog = false;
         }
     }
@@ -499,6 +570,7 @@ public partial class MainPage : ContentPage
                 }
             };
             var templateSelector = new PdfTemplateSelector(_settings.PdfTemplateId, _pdfService.IsSupported, templateColors);
+            var servicesEditor = new SettingsServicesEditor(_settings.Services);
             async Task<bool> ValidateTemplateColorsAsync()
             {
                 SettingsColorPicker? firstInvalid = null;
@@ -511,7 +583,7 @@ public partial class MainPage : ContentPage
                 firstInvalid.FocusHexEntry();
                 return false;
             }
-            AppSettings ReadDraftSettings(decimal vatRate) => new()
+            AppSettings ReadDraftSettings(decimal vatRate, List<ServiceDefinition>? services = null) => new()
             {
                 IssuerName = issuerEntry.Text ?? string.Empty,
                 LogoPath = logoPathEntry.Text,
@@ -528,7 +600,8 @@ public partial class MainPage : ContentPage
                 PdfSecondaryColor = secondaryColorPicker.SelectedColorHex,
                 PdfTextColor = textColorPicker.SelectedColorHex,
                 VatRate = vatRate,
-                DefaultMessage = editor.Text ?? string.Empty
+                DefaultMessage = editor.Text ?? string.Empty,
+                Services = services ?? []
             };
             templateSelector.PreviewRequested += async (_, _) =>
             {
@@ -607,6 +680,8 @@ public partial class MainPage : ContentPage
                         CreateSettingsPathRow(dataFilePathEntry, browseDataFile),
                         clearDataFile,
                         new BoxView { HeightRequest = 1, Color = Color.FromArgb("D2DCE8"), HorizontalOptions = LayoutOptions.Fill },
+                        servicesEditor,
+                        new BoxView { HeightRequest = 1, Color = Color.FromArgb("D2DCE8"), HorizontalOptions = LayoutOptions.Fill },
                         new Label { Text = LocalizationService.Get("ContactData"), FontSize = 18, FontAttributes = FontAttributes.Bold },
                         new Label { Text = LocalizationService.Get("Email"), FontAttributes = FontAttributes.Bold },
                         emailBorder,
@@ -641,6 +716,12 @@ public partial class MainPage : ContentPage
                     return;
                 if (!await ValidateTemplateColorsAsync())
                     return;
+                if (!servicesEditor.TryReadServices(out var services, out var invalidServiceEntry))
+                {
+                    await ((ScrollView)page.Content).ScrollToAsync(invalidServiceEntry!, ScrollToPosition.Center, true);
+                    invalidServiceEntry!.Focus();
+                    return;
+                }
                 if (!ValidateEmail())
                 {
                     await ((ScrollView)page.Content).ScrollToAsync(0, 0, true);
@@ -656,7 +737,7 @@ public partial class MainPage : ContentPage
                 }
 
                 var defaultMessageEdited = editor.Text != _viewModel.DefaultMessage;
-                var settings = ReadDraftSettings(vatRate);
+                var settings = ReadDraftSettings(vatRate, services);
                 settings.Normalize();
                 savingSettings = true;
                 page.Content.IsEnabled = false;
